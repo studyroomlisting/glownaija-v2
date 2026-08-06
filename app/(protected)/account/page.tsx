@@ -5,6 +5,7 @@ import Link               from 'next/link'
 import { fmtPrice }       from '@/lib/utils'
 import { cancelBooking }  from '@/lib/actions/bookings'
 import { updateProfile }  from '@/lib/actions/account'
+import DashboardSidebar   from '@/components/layout/DashboardSidebar'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,32 +81,48 @@ export default async function AccountPage({
     })
   }
 
-  const tabs = [
-    { id: 'overview',  label: 'Overview' },
-    { id: 'bookings',  label: 'Bookings', badge: upcoming.length || undefined },
-    { id: 'orders',    label: 'Orders' },
-    { id: 'saved',     label: 'Saved' },
-    { id: 'profile',   label: 'Profile' },
+  const sidebarItems = [
+    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'bookings', label: 'Bookings', icon: '📅', badge: upcoming.length || undefined },
+    { id: 'orders',   label: 'Orders',   icon: '🛍️' },
+    { id: 'saved',    label: 'Saved',    icon: '❤️' },
+    { id: 'profile',  label: 'Profile',  icon: '👤' },
   ]
 
   return (
-    <div className="container py-8 max-w-4xl">
+    <div className="flex">
+      <DashboardSidebar
+        basePath="/account"
+        activeTab={tab}
+        items={sidebarItems}
+        brandInitial={profile?.first_name?.[0]?.toUpperCase() || '?'}
+        brandName="My Account"
+        brandSubtitle="GlowNaija"
+        userName={profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : 'You'}
+        userRole="Customer"
+        userAvatarUrl={profile?.avatar_url}
+        accountHref="/account?tab=profile"
+      />
 
-      {/* Page header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-rose to-gold flex items-center justify-center text-white text-xl font-black flex-shrink-0">
-          {profile?.first_name?.[0]?.toUpperCase() || '?'}
+      <div className="flex-1 min-w-0">
+        <div className="border-b border-bdr bg-white px-6 py-5">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose to-gold flex items-center justify-center text-white text-lg font-black flex-shrink-0">
+              {profile?.first_name?.[0]?.toUpperCase() || '?'}
+            </div>
+            <div>
+              <h1 className="text-xl font-black">Hi, {profile?.first_name}! 👋</h1>
+              <p className="text-ink-3 text-sm">{user.email}</p>
+            </div>
+            {unread > 0 && (
+              <span className="ml-auto badge-pill bg-rose text-white text-xs">
+                🔔 {unread} new
+              </span>
+            )}
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-black">Hi, {profile?.first_name}! 👋</h1>
-          <p className="text-ink-3 text-sm">{user.email}</p>
-        </div>
-        {unread > 0 && (
-          <span className="ml-auto badge-pill bg-rose text-white text-xs">
-            🔔 {unread} new
-          </span>
-        )}
-      </div>
+
+        <div className="p-6 max-w-4xl">
 
       {/* Flash message */}
       {searchParams.msg === 'profile_saved' && (
@@ -117,21 +134,6 @@ export default async function AccountPage({
       {searchParams.msg === 'booking_cancelled' && (
         <div className="alert-success mb-4">Booking cancelled.</div>
       )}
-
-      {/* Tabs */}
-      <div className="tabs mb-6">
-        {tabs.map(t => (
-          <Link key={t.id} href={`/account?tab=${t.id}`}
-            className={`tab flex items-center gap-1.5 ${tab === t.id ? 'active' : ''}`}>
-            {t.label}
-            {t.badge ? (
-              <span className="bg-rose text-white text-2xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                {t.badge}
-              </span>
-            ) : null}
-          </Link>
-        ))}
-      </div>
 
       {/* ── OVERVIEW ─────────────────────────────────────────────────────── */}
       {tab === 'overview' && (
@@ -553,6 +555,8 @@ export default async function AccountPage({
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   )
 }

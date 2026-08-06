@@ -8,6 +8,7 @@ import PhotoUpload        from '@/components/dashboard/PhotoUpload'
 import ReviewCard         from '@/components/salon/ReviewCard'
 import ActionForm         from '@/components/dashboard/ActionForm'
 import ActionButton       from '@/components/dashboard/ActionButton'
+import DashboardSidebar   from '@/components/layout/DashboardSidebar'
 import { addService, updateProfile, updateHours, updateEnquiryStatus, deleteService } from '@/lib/actions/dashboard'
 import { updateBookingStatus } from '@/lib/actions/bookings'
 
@@ -29,6 +30,8 @@ export default async function DashboardPage({
   if (!mySalons?.length) redirect('/business')
 
   const salon = mySalons.find(s => s.id === searchParams.salon) || mySalons[0]
+
+  const { data: ownerProfile } = await supabase.from('profiles').select('first_name,last_name,avatar_url').eq('id', user.id).single()
 
   const tab      = searchParams.tab    || 'overview'
   const bfilter  = searchParams.bstatus || 'all'
@@ -104,16 +107,16 @@ export default async function DashboardPage({
   ]
   const completion = Math.round(steps.filter(s => s.done).length / steps.length * 100)
 
-  const tabs = [
-    { id:'overview',   label:'📊 Overview' },
-    { id:'analytics',  label:'📈 Analytics' },
-    { id:'mysalons',   label:'🏬 My Salons', badge: mySalons.length > 1 ? mySalons.length : undefined },
-    { id:'profile',    label:'🏪 Profile' },
-    { id:'services',   label:'📋 Services', badge: services?.length },
-    { id:'hours',      label:'🕐 Hours' },
-    { id:'bookings',   label:'📅 Bookings', badge: upcoming.length || undefined },
-    { id:'enquiries',  label:'📩 Enquiries', badge: unread || undefined },
-    { id:'reviews',    label:'⭐ Reviews', badge: reviews?.length },
+  const sidebarItems = [
+    { id:'overview',   label:'Overview',   icon:'📊' },
+    { id:'analytics',  label:'Analytics',  icon:'📈' },
+    { id:'mysalons',   label:'My Salons',  icon:'🏬', badge: mySalons.length > 1 ? mySalons.length : undefined },
+    { id:'profile',    label:'Profile',    icon:'🏪' },
+    { id:'services',   label:'Services',   icon:'📋', badge: services?.length },
+    { id:'hours',      label:'Hours',      icon:'🕐' },
+    { id:'bookings',   label:'Bookings',   icon:'📅', badge: upcoming.length || undefined },
+    { id:'enquiries',  label:'Enquiries',  icon:'📩', badge: unread || undefined },
+    { id:'reviews',    label:'Reviews',    icon:'⭐', badge: reviews?.length },
   ]
 
   function fmtDate(d: string) {
@@ -125,77 +128,77 @@ export default async function DashboardPage({
   const durLabel = (m: number) => m >= 60 ? `${Math.floor(m/60)}h${m%60?` ${m%60}m`:''}` : `${m}m`
 
   return (
-    <div>
-      {/* ── Header bar ──────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-ink to-purple-900 py-5">
-        <div className="container flex justify-between items-center flex-wrap gap-3">
-          <div>
-            <p className="text-white/40 text-2xs uppercase tracking-widest mb-0.5">Salon Dashboard</p>
-            <h1 className="text-white text-xl font-black">{salon.name} {salon.emoji}</h1>
-            <p className="text-white/40 text-xs">📍 {salon.area}, {salon.city}{salon.postcode ? ` · ${salon.postcode}` : ''} · ★{salon.rating || '—'} · {salon.review_count} reviews</p>
-          </div>
-          <div className="flex gap-2 flex-wrap items-center">
-            {salon.slug && (
-              <Link href={`/salon/${salon.slug}`} target="_blank" className="btn btn-sm border-white/30 text-white border-2 bg-transparent hover:bg-white/10 text-xs">
-                👁 View Listing
-              </Link>
-            )}
-            <span className={`btn btn-sm text-xs text-white border-2 ${salon.is_open ? 'border-gn bg-gn/20' : 'border-white/20 bg-white/10'}`}>
-              {salon.is_open ? '● Open' : '● Closed'}
-            </span>
-          </div>
-        </div>
+    <div className="flex">
+      <DashboardSidebar
+        basePath="/dashboard"
+        activeTab={tab}
+        items={sidebarItems}
+        brandInitial={salon.emoji}
+        brandName={salon.name}
+        brandSubtitle="Owner Panel"
+        userName={ownerProfile?.first_name ? `${ownerProfile.first_name} ${ownerProfile.last_name || ''}`.trim() : salon.name}
+        userRole="Salon Owner"
+        userAvatarUrl={ownerProfile?.avatar_url}
+        extraQuery={`salon=${salon.id}`}
+        accountHref="/account"
+      />
 
-        {/* Salon switcher — only shown once an owner has more than one salon */}
-        <div className="container flex items-center gap-2 flex-wrap mt-3">
-          {mySalons.length > 1 && mySalons.map(s => (
-            <Link key={s.id} href={`/dashboard?salon=${s.id}&tab=${tab}`}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${s.id === salon.id ? 'bg-white text-ink' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}>
-              {s.emoji} {s.name}
-            </Link>
-          ))}
-          <Link href="/business?new=1" className="px-3 py-1.5 rounded-full text-xs font-bold bg-white/10 text-white/70 hover:bg-white/20 border border-dashed border-white/30">
-            + Add Another Salon
-          </Link>
-        </div>
-      </div>
-
-      <div className="container py-6">
-        {/* Profile completion */}
-        {completion < 100 && (
-          <div className="card card-body mb-5 border-gold bg-yellow-50">
-            <div className="flex justify-between items-center mb-2">
-              <p className="font-bold text-sm">⚡ Profile {completion}% complete</p>
-              <span className="text-xs text-ink-3">{steps.filter(s=>s.done).length}/{steps.length} steps</span>
+      <div className="flex-1 min-w-0">
+        {/* Top bar */}
+        <div className="border-b border-bdr bg-white px-6 py-5">
+          <div className="flex justify-between items-center flex-wrap gap-3">
+            <div>
+              <p className="text-ink-3 text-2xs uppercase tracking-widest mb-0.5">Salon Dashboard</p>
+              <h1 className="text-xl font-black">{salon.name} {salon.emoji}</h1>
+              <p className="text-ink-3 text-xs">📍 {salon.area}, {salon.city}{salon.postcode ? ` · ${salon.postcode}` : ''} · ★{salon.rating || '—'} · {salon.review_count} reviews</p>
             </div>
-            <div className="h-1.5 bg-white rounded-full overflow-hidden mb-3">
-              <div className="h-full bg-gold rounded-full transition-all" style={{width:`${completion}%`}}/>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {steps.map(s => (
-                <Link key={s.label} href={`/dashboard?salon=${salon.id}&tab=${s.tab}`}
-                  className={`px-3 py-1 rounded-full text-xs font-bold ${s.done ? 'bg-green-100 text-gn' : 'bg-rose-100 text-rose'}`}>
-                  {s.done ? '✓' : '+'} {s.label}
+            <div className="flex gap-2 flex-wrap items-center">
+              {salon.slug && (
+                <Link href={`/salon/${salon.slug}`} target="_blank" className="btn btn-outline btn-sm text-xs">
+                  👁 View Listing
                 </Link>
-              ))}
+              )}
+              <span className={`btn btn-sm text-xs border-2 ${salon.is_open ? 'border-gn bg-green-50 text-gn' : 'border-bdr bg-page-2 text-ink-3'}`}>
+                {salon.is_open ? '● Open' : '● Closed'}
+              </span>
             </div>
           </div>
-        )}
 
-        {/* Tabs */}
-        <div className="tabs mb-6">
-          {tabs.map(t => (
-            <Link key={t.id} href={`/dashboard?salon=${salon.id}&tab=${t.id}`}
-              className={`tab flex items-center gap-1.5 ${tab === t.id ? 'active' : ''}`}>
-              {t.label}
-              {t.badge ? (
-                <span className={`text-2xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ${tab === t.id ? 'bg-white/25 text-white' : 'bg-rose text-white'}`}>
-                  {t.badge}
-                </span>
-              ) : null}
+          {/* Salon switcher — only shown once an owner has more than one salon */}
+          <div className="flex items-center gap-2 flex-wrap mt-3">
+            {mySalons.length > 1 && mySalons.map(s => (
+              <Link key={s.id} href={`/dashboard?salon=${s.id}&tab=${tab}`}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${s.id === salon.id ? 'bg-ink text-white' : 'bg-page-2 text-ink-3 hover:bg-page'}`}>
+                {s.emoji} {s.name}
+              </Link>
+            ))}
+            <Link href="/business?new=1" className="px-3 py-1.5 rounded-full text-xs font-bold bg-page-2 text-ink-3 hover:bg-page border border-dashed border-bdr">
+              + Add Another Salon
             </Link>
-          ))}
+          </div>
         </div>
+
+        <div className="p-6">
+          {/* Profile completion */}
+          {completion < 100 && (
+            <div className="card card-body mb-5 border-gold bg-yellow-50">
+              <div className="flex justify-between items-center mb-2">
+                <p className="font-bold text-sm">⚡ Profile {completion}% complete</p>
+                <span className="text-xs text-ink-3">{steps.filter(s=>s.done).length}/{steps.length} steps</span>
+              </div>
+              <div className="h-1.5 bg-white rounded-full overflow-hidden mb-3">
+                <div className="h-full bg-gold rounded-full transition-all" style={{width:`${completion}%`}}/>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {steps.map(s => (
+                  <Link key={s.label} href={`/dashboard?salon=${salon.id}&tab=${s.tab}`}
+                    className={`px-3 py-1 rounded-full text-xs font-bold ${s.done ? 'bg-green-100 text-gn' : 'bg-rose-100 text-rose'}`}>
+                    {s.done ? '✓' : '+'} {s.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
         {/* ══ OVERVIEW ══════════════════════════════════════════════════ */}
         {tab === 'overview' && (
@@ -807,6 +810,7 @@ export default async function DashboardPage({
           </div>
         )}
 
+        </div>
       </div>
     </div>
   )

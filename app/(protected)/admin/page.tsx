@@ -8,13 +8,15 @@ import UserRow   from '@/components/admin/UserRow'
 import ReviewRow from '@/components/admin/ReviewRow'
 import OrderRow  from '@/components/admin/OrderRow'
 import AuditRow  from '@/components/admin/AuditRow'
+import StatsCard from '@/components/dashboard/StatsCard'
+import DashboardSidebar from '@/components/layout/DashboardSidebar'
 
 export default async function AdminPage({ searchParams }: { searchParams: { tab?: string } }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
 
-  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('is_admin,first_name,last_name,avatar_url').eq('id', user.id).single()
   if (!profile?.is_admin) redirect('/')
 
   const tab = searchParams.tab || 'overview'
@@ -51,29 +53,48 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
     )
   } catch { /* non-fatal — user rows just show as not-banned if this lookup fails */ }
 
-  const tabs = ['overview', 'salons', 'users', 'bookings', 'orders', 'reviews', 'audit']
-    .map(t => ({ id: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))
+  const sidebarItems = [
+    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'salons',   label: 'Salons',   icon: '🏪', badge: salons_count || undefined },
+    { id: 'users',    label: 'Users',    icon: '👥', badge: users_count || undefined },
+    { id: 'bookings', label: 'Bookings', icon: '📅' },
+    { id: 'orders',   label: 'Orders',   icon: '🛍️' },
+    { id: 'reviews',  label: 'Reviews',  icon: '⭐' },
+    { id: 'audit',    label: 'Audit Log',icon: '📜' },
+  ]
 
   return (
-    <div>
-      <div className="bg-ink py-5">
-        <div className="container flex justify-between items-center flex-wrap gap-3">
-          <h1 className="text-white text-xl font-black">⚙️ Admin Panel</h1>
-          <Link href="/" className="btn btn-outline btn-sm border-white/30 text-white text-xs">View Site</Link>
-        </div>
-      </div>
-      <div className="container py-6">
-        <div className="tabs mb-6">
-          {tabs.map(t => <Link key={t.id} href={`/admin?tab=${t.id}`} className={`tab ${tab === t.id ? 'active' : ''}`}>{t.label}</Link>)}
+    <div className="flex">
+      <DashboardSidebar
+        basePath="/admin"
+        activeTab={tab}
+        items={sidebarItems}
+        brandInitial="⚙️"
+        brandName="Admin Panel"
+        brandSubtitle="GlowNaija"
+        userName={profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : 'Admin'}
+        userRole="Administrator"
+        userAvatarUrl={profile?.avatar_url}
+        accountHref="/account"
+      />
+
+      <div className="flex-1 min-w-0">
+        <div className="border-b border-bdr bg-white px-6 py-5 flex justify-between items-center flex-wrap gap-3">
+          <div>
+            <p className="text-ink-3 text-2xs uppercase tracking-widest mb-0.5">GlowNaija</p>
+            <h1 className="text-xl font-black">Admin Overview</h1>
+          </div>
+          <Link href="/" className="btn btn-outline btn-sm text-xs">View Site</Link>
         </div>
 
+        <div className="p-6">
         {tab === 'overview' && (
           <div className="space-y-5">
             <div className="grid-4">
-              <div className="card card-body text-center"><div className="text-3xl mb-1">🏪</div><div className="text-2xl font-black">{salons_count || 0}</div><div className="text-xs font-bold uppercase text-ink-3">Active Salons</div></div>
-              <div className="card card-body text-center"><div className="text-3xl mb-1">👥</div><div className="text-2xl font-black">{users_count || 0}</div><div className="text-xs font-bold uppercase text-ink-3">Users</div></div>
-              <div className="card card-body text-center"><div className="text-3xl mb-1">📅</div><div className="text-2xl font-black">{bookings_count || 0}</div><div className="text-xs font-bold uppercase text-ink-3">Bookings (30d)</div></div>
-              <div className="card card-body text-center"><div className="text-3xl mb-1">🛍️</div><div className="text-2xl font-black">{orders_count || 0}</div><div className="text-xs font-bold uppercase text-ink-3">Orders (30d)</div></div>
+              <StatsCard icon="🏪" label="Active Salons" value={salons_count || 0}/>
+              <StatsCard icon="👥" label="Users" value={users_count || 0}/>
+              <StatsCard icon="📅" label="Bookings (30d)" value={bookings_count || 0}/>
+              <StatsCard icon="🛍️" label="Orders (30d)" value={orders_count || 0}/>
             </div>
             <div className="card card-body">
               <h2 className="font-bold mb-3">Quick Links</h2>
@@ -148,6 +169,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   )
