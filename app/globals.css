@@ -1,0 +1,317 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Variables ───────────────────────────────────────────────────────── */
+:root {
+  --rose:    #E8607A;
+  --rose-d:  #C94D66;
+  --gold:    #D4AF37;
+  --gn:      #10B981;
+  --ink:     #1C1008;
+  --ink-2:   #3D2B1A;
+  --ink-3:   #8C7B6E;
+  --page:    #FFF9F5;
+  --page-2:  #F5EDE5;
+  --bdr:     #E8E0D8;
+  --rose-text: #C94D66;      /* AA-safe rose for normal-size text on light backgrounds */
+  --ink-3-on-dark: #B8A99A;  /* AA-safe muted text on dark (--ink) surfaces, e.g. footer */
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+@layer base {
+  * { box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  a { text-decoration: none; }
+
+  /* Visible keyboard-focus ring, sitewide. Only shows for keyboard/AT focus (:focus-visible),
+     not on mouse click, so it doesn't change the existing mouse-driven look of the app. */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--rose);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Skip-to-content link: hidden off-screen until it receives keyboard focus. */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 100;
+    background: var(--ink);
+    color: #ffffff;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  .skip-link:focus {
+    left: 0;
+  }
+}
+
+/* ── Components — use CSS variables instead of @apply with custom tokens ── */
+@layer components {
+
+  /* Buttons — raw CSS, not @apply with custom colours */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--rose);
+    color: #ffffff;
+  }
+  .btn-primary:hover { background: var(--rose-d); }
+
+  .btn-outline {
+    background: #ffffff;
+    color: var(--ink);
+    border: 2px solid var(--bdr);
+  }
+  .btn-outline:hover {
+    border-color: var(--rose);
+    color: var(--rose);
+  }
+
+  .btn-green {
+    background: var(--gn);
+    color: #ffffff;
+  }
+  .btn-green:hover { opacity: 0.9; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink);
+  }
+  .btn-ghost:hover { background: var(--page-2); }
+
+  .btn-danger {
+    background: #ef4444;
+    color: #ffffff;
+  }
+  .btn-danger:hover { background: #dc2626; }
+
+  .btn-sm {
+    padding: 0.5rem 0.75rem;   /* matches components/ui/Button.tsx size="sm" (py-2 px-3) exactly */
+    font-size: 0.75rem;
+    border-radius: 0.5rem;
+  }
+  .btn-lg {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 0.75rem;
+  }
+
+  /* Disabled state */
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Cards */
+  .card {
+    background: #ffffff;
+    border-radius: 1rem;
+    border: 1px solid var(--bdr);
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  }
+  .card-body { padding: 1.25rem; }
+
+  /* Form inputs */
+  .input {
+    width: 100%;
+    border: 2px solid var(--bdr);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    background: #ffffff;
+    color: var(--ink);
+  }
+  .input:focus { border-color: var(--rose); }
+
+  .label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-3);
+    margin-bottom: 0.375rem;
+  }
+
+  /* Alerts */
+  .alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    font-size: 0.875rem;
+  }
+  .alert-success {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #15803d;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* Tags & badges */
+  .tag {
+    display: inline-block;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--page-2);
+    color: var(--ink-3);
+  }
+  .badge-pill {
+    display: inline-block;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  /* Booking status chips */
+  .status {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .status-pending   { background: #fef9c3; color: #a16207; }
+  .status-confirmed { background: #dbeafe; color: #1d4ed8; }
+  .status-completed { background: #dcfce7; color: #15803d; }
+  .status-cancelled { background: #f3f4f6; color: #6b7280; }
+  .status-no_show   { background: #fee2e2; color: #dc2626; }
+
+  /* Layout helpers */
+  .page-hero {
+    background: var(--ink);
+    color: #ffffff;
+    padding: 2.5rem 0;
+  }
+  .section { padding: 3rem 0; }
+  .container {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  /* Grids */
+  .grid-2 { display: grid; grid-template-columns: repeat(1, 1fr); gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(1, 1fr); gap: 1rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+
+  @media (min-width: 768px) {
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 1024px) {
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--bdr);
+    margin-bottom: 1.25rem;
+  }
+  .tab {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ink-3);
+    border-radius: 0.5rem 0.5rem 0 0;
+    white-space: nowrap;
+    transition: color 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    background: none;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active {
+    color: #ffffff;
+    background: var(--ink);
+  }
+
+  /* Icon badge — colored circle behind an emoji/icon, used in category cards & CTA feature lists */
+  .icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: var(--page-2);
+    flex-shrink: 0;
+  }
+
+  /* Decorative dashed connector between "How it works" steps (desktop only) */
+  .step-connector {
+    display: none;
+  }
+  @media (min-width: 768px) {
+    .step-connector {
+      display: block;
+      border-top: 2px dashed var(--bdr);
+      align-self: start;
+      margin-top: 1.75rem;
+    }
+  }
+}
+
+/* ── Scrollbar-hidden horizontal rows (Top Rated Salons, Testimonials) ───── */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.animate-slide-in { animation: slide-in 0.25s ease-out; }
+
+@keyframes bounce-dot {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+  40%            { transform: translateY(-6px); opacity: 1; }
+}
