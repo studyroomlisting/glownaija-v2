@@ -22,6 +22,7 @@ export default function Header() {
   const [notifList, setNotifList]   = useState<any[]>([])
   const [glowMenuOpen, setGlowMenuOpen] = useState(false)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const [ownsASalon, setOwnsASalon] = useState(false)
   const supabase = createClient()
   const pathname = usePathname()
   const glowMenuRef = useRef<HTMLDivElement>(null)
@@ -49,6 +50,8 @@ export default function Header() {
       if (user) {
         supabase.from('profiles').select('*').eq('id', user.id).single()
           .then(({ data }) => setProfile(data))
+        supabase.from('salons').select('id').eq('owner_id', user.id).limit(1)
+          .then(({ data }) => setOwnsASalon(!!data?.length))
         fetchNotifs()
       }
     })
@@ -71,7 +74,7 @@ export default function Header() {
     setNotifList(prev => prev.map(n => ({ ...n, is_read: true })))
   }
 
-  const isOwner = profile?.account_type === 'owner'
+  const isOwner = profile?.account_type === 'owner' || ownsASalon
   const displayName = profile?.first_name
     || user?.user_metadata?.given_name
     || user?.user_metadata?.full_name?.split(' ')?.[0]
