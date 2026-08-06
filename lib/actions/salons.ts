@@ -74,7 +74,7 @@ export async function createSalon(formData: FormData) {
     years_active: years, accepts_online_bookings: onlineBk,
   }).select().single()
 
-  if (error || !salon) return { error: 'Could not create salon. Please try again.' }
+  if (error || !salon) return { error: error?.message ? `Could not create salon: ${error.message}` : 'Could not create salon. Please try again.' }
 
   // Whoever successfully lists a salon should be recognized as an owner from here on,
   // regardless of what account_type they originally signed up with.
