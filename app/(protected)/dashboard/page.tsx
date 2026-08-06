@@ -21,7 +21,7 @@ export default async function DashboardPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
 
-  const { data: salonRaw } = await supabase.from('salons').select('*').eq('owner_id', user.id).single()
+  const { data: salon } = await supabase.from('salons').select('*').eq('owner_id', user.id).single()
   if (!salon) redirect('/business')
 
   const tab      = searchParams.tab    || 'overview'
@@ -268,7 +268,7 @@ export default async function DashboardPage({
                         return (
                           <div key={mo} className="flex-1 flex flex-col items-center gap-1">
                             <span className="text-3xs text-ink-3">£{Math.round(rev/100)}</span>
-                            <div className="w-full rounded-t-md transition-all" style={{height:`${h}px`, background: isCurrent ? 'var(--rose)' : 'var(--ink3)'}}/>
+                            <div className="w-full rounded-t-md transition-all" style={{height:`${h}px`, background: isCurrent ? 'var(--rose)' : 'var(--ink-3)'}}/>
                             <span className="text-3xs text-ink-3">{new Date(mo+'-01').toLocaleDateString('en-GB',{month:'short'})}</span>
                           </div>
                         )
@@ -295,7 +295,7 @@ export default async function DashboardPage({
                       return (
                         <div key={mo} className="flex-1 flex flex-col items-center gap-1">
                           <span className="text-3xs text-ink-3">{cnt}</span>
-                          <div className="w-full rounded-t-md" style={{height:`${h}px`, background: isCurrent ? 'var(--ink)' : 'var(--border)'}}/>
+                          <div className="w-full rounded-t-md" style={{height:`${h}px`, background: isCurrent ? 'var(--ink)' : 'var(--bdr)'}}/>
                           <span className="text-3xs text-ink-3">{new Date(mo+'-01').toLocaleDateString('en-GB',{month:'short'})}</span>
                         </div>
                       )
