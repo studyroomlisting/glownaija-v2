@@ -20,14 +20,14 @@ export default function SalonRow({ salon }: { salon: Salon & { booking_count?: n
       </div>
       <div className="flex gap-2 flex-wrap flex-shrink-0">
         {salon.slug && <Link href={`/salon/${salon.slug}`} target="_blank" className="btn btn-outline btn-sm text-xs">👁 View</Link>}
-        <ActionButton action={() => toggleVerified(salon.id, !salon.is_verified)} className={`btn btn-sm btn-outline text-xs ${salon.is_verified ? 'text-gn border-gn' : ''}`}>
+        <ActionButton action={toggleVerified.bind(null, salon.id, !salon.is_verified)} className={`btn btn-sm btn-outline text-xs ${salon.is_verified ? 'text-gn border-gn' : ''}`}>
           {salon.is_verified ? '✓ Unverify' : '✓ Verify'}
         </ActionButton>
-        <ActionButton action={() => toggleFeatured(salon.id, !salon.is_featured)} className={`btn btn-sm btn-outline text-xs ${salon.is_featured ? 'text-gold border-gold' : ''}`}>
+        <ActionButton action={toggleFeatured.bind(null, salon.id, !salon.is_featured)} className={`btn btn-sm btn-outline text-xs ${salon.is_featured ? 'text-gold border-gold' : ''}`}>
           {salon.is_featured ? '★ Unfeature' : '★ Feature'}
         </ActionButton>
         <ActionButton
-          action={() => updateSalonStatus(salon.id, salon.listing_status === 'approved' ? 'suspended' : 'approved')}
+          action={updateSalonStatus.bind(null, salon.id, salon.listing_status === 'approved' ? 'suspended' : 'approved')}
           className={`btn btn-sm text-xs ${salon.listing_status === 'approved' ? 'btn-outline text-rose border-rose' : 'btn-green'}`}
           confirmMessage={salon.listing_status === 'approved' ? `Suspend "${salon.name}"? It will be hidden from the site.` : undefined}
         >

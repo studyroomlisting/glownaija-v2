@@ -587,7 +587,7 @@ export default async function DashboardPage({
                           </div>
                           <div className="text-right flex-shrink-0 ml-3">
                             <p className="font-black">{fmtPrice(s.price)}</p>
-                            <ActionButton action={() => deleteService(s.id, salon.id)} className="text-xs text-rose hover:underline mt-0.5" confirmMessage={`Remove "${s.name}"?`}>
+                            <ActionButton action={deleteService.bind(null, s.id, salon.id)} className="text-xs text-rose hover:underline mt-0.5" confirmMessage={`Remove "${s.name}"?`}>
                               Remove
                             </ActionButton>
                           </div>
@@ -688,11 +688,11 @@ export default async function DashboardPage({
                     {['pending','confirmed'].includes(b.status) && (
                       <div className="flex gap-2 flex-wrap pt-3 border-t border-bdr">
                         {b.status === 'pending' && (
-                          <ActionButton action={() => updateBookingStatus(b.id, 'confirmed')} className="btn btn-green btn-sm">✓ Confirm</ActionButton>
+                          <ActionButton action={updateBookingStatus.bind(null, b.id, 'confirmed')} className="btn btn-green btn-sm">✓ Confirm</ActionButton>
                         )}
-                        <ActionButton action={() => updateBookingStatus(b.id, 'completed')} className="btn btn-sm bg-blue-500 text-white hover:bg-blue-600">✓ Complete</ActionButton>
-                        <ActionButton action={() => updateBookingStatus(b.id, 'no_show')} className="btn btn-outline btn-sm">No Show</ActionButton>
-                        <ActionButton action={() => updateBookingStatus(b.id, 'cancelled')} className="btn btn-outline btn-sm text-rose border-rose/50 hover:border-rose" confirmMessage="Cancel this booking?">Cancel</ActionButton>
+                        <ActionButton action={updateBookingStatus.bind(null, b.id, 'completed')} className="btn btn-sm bg-blue-500 text-white hover:bg-blue-600">✓ Complete</ActionButton>
+                        <ActionButton action={updateBookingStatus.bind(null, b.id, 'no_show')} className="btn btn-outline btn-sm">No Show</ActionButton>
+                        <ActionButton action={updateBookingStatus.bind(null, b.id, 'cancelled')} className="btn btn-outline btn-sm text-rose border-rose/50 hover:border-rose" confirmMessage="Cancel this booking?">Cancel</ActionButton>
                       </div>
                     )}
                   </div>
@@ -741,9 +741,9 @@ export default async function DashboardPage({
                       </div>
                       <div className="flex gap-2">
                         {e.status === 'unread' && (
-                          <ActionButton action={() => updateEnquiryStatus(e.id, 'read')} className="btn btn-outline btn-sm text-xs">Mark Read</ActionButton>
+                          <ActionButton action={updateEnquiryStatus.bind(null, e.id, 'read')} className="btn btn-outline btn-sm text-xs">Mark Read</ActionButton>
                         )}
-                        <ActionButton action={() => updateEnquiryStatus(e.id, 'archived')} className="btn btn-outline btn-sm text-xs text-ink-3">Archive</ActionButton>
+                        <ActionButton action={updateEnquiryStatus.bind(null, e.id, 'archived')} className="btn btn-outline btn-sm text-xs text-ink-3">Archive</ActionButton>
                       </div>
                     </div>
                     {e.subject && <p className="font-semibold text-sm mb-2">{e.subject}</p>}

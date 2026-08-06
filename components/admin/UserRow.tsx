@@ -23,11 +23,11 @@ export default function UserRow({ profile, isSelf }: UserRowProps) {
       </div>
       {!isSelf && (
         <div className="flex gap-2 flex-wrap flex-shrink-0">
-          <ActionButton action={() => toggleAdmin(profile.id, !profile.is_admin)} className="btn btn-outline btn-sm text-xs">
+          <ActionButton action={toggleAdmin.bind(null, profile.id, !profile.is_admin)} className="btn btn-outline btn-sm text-xs">
             {profile.is_admin ? 'Remove Admin' : 'Make Admin'}
           </ActionButton>
           <ActionButton
-            action={() => updateUserStatus(profile.id, !!profile.banned)}
+            action={updateUserStatus.bind(null, profile.id, !!profile.banned)}
             className={`btn btn-outline btn-sm text-xs ${profile.banned ? 'text-gn border-gn' : 'text-rose border-rose/50'}`}
             confirmMessage={profile.banned ? undefined : `Ban ${profile.first_name || 'this user'}? They won't be able to sign in.`}
           >

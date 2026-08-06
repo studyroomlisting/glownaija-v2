@@ -17,7 +17,7 @@ export default function ReviewRow({ review }: ReviewRowProps) {
         </div>
         <div className="flex items-center gap-3">
           <div className="text-gold">{'★'.repeat(review.rating)}</div>
-          <ActionButton action={() => deleteReview(review.id, review.salon_id)} className="btn btn-outline btn-sm text-xs text-rose border-rose/50" confirmMessage="Delete this review permanently?">
+          <ActionButton action={deleteReview.bind(null, review.id, review.salon_id)} className="btn btn-outline btn-sm text-xs text-rose border-rose/50" confirmMessage="Delete this review permanently?">
             Delete
           </ActionButton>
         </div>
