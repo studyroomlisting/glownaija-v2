@@ -438,7 +438,7 @@ export default async function DashboardPage({
             <div className="card card-body">
               <h2 className="font-bold text-lg mb-2">Salon Photos</h2>
               <p className="text-sm text-ink-3 mb-4">Photos increase booking rates by 3×. Add at least 3 of your best work.</p>
-              <PhotoUpload salonId={salon.id} images={salon.images || []} onUpdate={() => {}}/>
+              <PhotoUpload salonId={salon.id} images={salon.images || []}/>
             </div>
           </div>
         )}

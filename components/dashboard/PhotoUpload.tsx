@@ -1,14 +1,17 @@
 'use client'
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
-interface PhotoUploadProps { salonId: string; images: string[]; onUpdate: (imgs: string[]) => void }
+interface PhotoUploadProps { salonId: string; images: string[] }
 
-export default function PhotoUpload({ salonId, images, onUpdate }: PhotoUploadProps) {
+export default function PhotoUpload({ salonId, images: initialImages }: PhotoUploadProps) {
+  const [images,    setImages]    = useState(initialImages)
   const [uploading, setUploading] = useState(false)
   const [progress,  setProgress]  = useState(0)
   const [msg,       setMsg]       = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
 
   async function handleFiles(files: FileList) {
     if (!files.length) return
@@ -26,7 +29,7 @@ export default function PhotoUpload({ salonId, images, onUpdate }: PhotoUploadPr
     if (uploaded.length) {
       const res  = await fetch('/api/salon-photos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ salon_id: salonId, urls: uploaded }) })
       const data = await res.json()
-      if (data.images) onUpdate(data.images)
+      if (data.images) { setImages(data.images); router.refresh() }
       setMsg(`✅ ${uploaded.length} photo(s) uploaded!`)
     }
     setUploading(false); setProgress(0)
@@ -37,7 +40,7 @@ export default function PhotoUpload({ salonId, images, onUpdate }: PhotoUploadPr
     if (!confirm('Remove this photo?')) return
     const res  = await fetch('/api/salon-photos', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ salon_id: salonId, url }) })
     const data = await res.json()
-    if (data.images) onUpdate(data.images)
+    if (data.images) { setImages(data.images); router.refresh() }
   }
 
   return (
