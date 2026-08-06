@@ -112,17 +112,22 @@ export async function updateBookingStatus(bookingId: string, status: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not logged in' }
 
-  const allowed = ['confirmed','completed','cancelled','no_show']
-  if (!allowed.includes(status)) return { error: 'Invalid status' }
+  try {
+    const allowed = ['confirmed','completed','cancelled','no_show']
+    if (!allowed.includes(status)) return { error: 'Invalid status' }
 
-  // Verify user owns the salon this booking belongs to
-  const { data: booking } = await supabase.from('bookings').select('salon_id').eq('id', bookingId).single()
-  if (!booking) return { error: 'Booking not found' }
+    // Verify user owns the salon this booking belongs to
+    const { data: booking } = await supabase.from('bookings').select('salon_id').eq('id', bookingId).single()
+    if (!booking) return { error: 'Booking not found' }
 
-  const { data: salon } = await supabase.from('salons').select('id').eq('id', booking.salon_id).eq('owner_id', user.id).single()
-  if (!salon) return { error: 'Not authorised' }
+    const { data: salon } = await supabase.from('salons').select('id').eq('id', booking.salon_id).eq('owner_id', user.id).single()
+    if (!salon) return { error: 'Not authorised' }
 
-  await supabase.from('bookings').update({ status }).eq('id', bookingId)
-  revalidatePath('/dashboard')
-  return { success: true }
+    const { error } = await supabase.from('bookings').update({ status }).eq('id', bookingId)
+    if (error) return { error: `Could not update booking: ${error.message}` }
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (err: any) {
+    return { error: err?.message || 'Something went wrong updating the booking.' }
+  }
 }

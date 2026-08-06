@@ -107,6 +107,7 @@ export default async function DashboardPage({
   const tabs = [
     { id:'overview',   label:'📊 Overview' },
     { id:'analytics',  label:'📈 Analytics' },
+    { id:'mysalons',   label:'🏬 My Salons', badge: mySalons.length > 1 ? mySalons.length : undefined },
     { id:'profile',    label:'🏪 Profile' },
     { id:'services',   label:'📋 Services', badge: services?.length },
     { id:'hours',      label:'🕐 Hours' },
@@ -360,6 +361,61 @@ export default async function DashboardPage({
                   )
                 })}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══ MY SALONS ═════════════════════════════════════════════════ */}
+        {tab === 'mysalons' && (
+          <div className="card overflow-hidden">
+            <div className="p-5 border-b border-bdr flex justify-between items-center flex-wrap gap-3">
+              <div>
+                <h2 className="font-bold text-lg">My Salons ({mySalons.length})</h2>
+                <p className="text-sm text-ink-3">All the salons registered under your account</p>
+              </div>
+              <Link href="/business?new=1" className="btn btn-primary btn-sm">+ Add Another Salon</Link>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-page-2 text-left text-2xs font-bold uppercase tracking-wide text-ink-3">
+                    <th className="px-5 py-3">Salon</th>
+                    <th className="px-5 py-3">Location</th>
+                    <th className="px-5 py-3">Status</th>
+                    <th className="px-5 py-3">Rating</th>
+                    <th className="px-5 py-3">Plan</th>
+                    <th className="px-5 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mySalons.map(s => (
+                    <tr key={s.id} className={`border-b border-bdr last:border-0 ${s.id === salon.id ? 'bg-rose-50' : ''}`}>
+                      <td className="px-5 py-3">
+                        <p className="font-bold">{s.emoji} {s.name}</p>
+                        {s.id === salon.id && <span className="text-2xs text-rose font-bold">Currently viewing</span>}
+                      </td>
+                      <td className="px-5 py-3 text-ink-3">{s.area}, {s.city}</td>
+                      <td className="px-5 py-3">
+                        <span className={`badge-pill text-2xs ${s.listing_status === 'approved' ? 'bg-green-100 text-gn' : 'bg-rose-100 text-rose'}`}>
+                          {s.listing_status}
+                        </span>
+                        {' '}
+                        <span className={`badge-pill text-2xs ${s.is_open ? 'bg-green-100 text-gn' : 'bg-page-2 text-ink-3'}`}>
+                          {s.is_open ? 'Open' : 'Closed'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-ink-3">{s.rating ? `★${s.rating} (${s.review_count})` : 'No reviews'}</td>
+                      <td className="px-5 py-3 text-ink-3 capitalize">{s.plan}</td>
+                      <td className="px-5 py-3 text-right">
+                        <div className="flex gap-2 justify-end flex-wrap">
+                          <Link href={`/dashboard?salon=${s.id}&tab=profile`} className="btn btn-outline btn-sm text-xs">✏️ Edit</Link>
+                          {s.slug && <Link href={`/salon/${s.slug}`} target="_blank" className="btn btn-outline btn-sm text-xs">👁 View</Link>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
