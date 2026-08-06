@@ -76,6 +76,10 @@ export async function createSalon(formData: FormData) {
 
   if (error || !salon) return { error: 'Could not create salon. Please try again.' }
 
+  // Whoever successfully lists a salon should be recognized as an owner from here on,
+  // regardless of what account_type they originally signed up with.
+  await supabase.from('profiles').update({ account_type: 'owner' }).eq('id', user.id)
+
   // Notify admins
   const { data: admins } = await supabase.from('profiles').select('id').eq('is_admin', true)
   if (admins?.length) {

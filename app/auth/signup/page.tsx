@@ -37,7 +37,7 @@ export default function SignUpPage() {
     const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback`, queryParams: { role } },
+      options: { redirectTo: `${window.location.origin}/auth/callback?role=${role}` },
     })
   }
 
