@@ -171,7 +171,7 @@ export default function Header() {
             </div>
           )}
 
-          {isOwner && !profile?.is_admin && (
+          {(!user || isOwner) && !profile?.is_admin && (
             <Link href="/business" className="hidden md:flex btn btn-primary btn-sm ml-1">List Your Salon</Link>
           )}
           {isOwner && (
@@ -230,7 +230,7 @@ export default function Header() {
             )
           })}
 
-          {isOwner && !profile?.is_admin && <Link href="/business" className="btn btn-primary btn-sm justify-center mt-3" onClick={() => setMobileOpen(false)}>List Your Salon</Link>}
+          {(!user || isOwner) && !profile?.is_admin && <Link href="/business" className="btn btn-primary btn-sm justify-center mt-3" onClick={() => setMobileOpen(false)}>List Your Salon</Link>}
           {isOwner  && <Link href="/dashboard" className="btn btn-outline btn-sm justify-center mt-3" onClick={() => setMobileOpen(false)}>Dashboard</Link>}
 
           {user ? (
