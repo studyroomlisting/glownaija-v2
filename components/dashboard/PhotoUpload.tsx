@@ -10,27 +10,49 @@ export default function PhotoUpload({ salonId, images: initialImages }: PhotoUpl
   const [uploading, setUploading] = useState(false)
   const [progress,  setProgress]  = useState(0)
   const [msg,       setMsg]       = useState('')
+  const [msgType,   setMsgType]   = useState<'info' | 'success' | 'error'>('info')
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
   async function handleFiles(files: FileList) {
     if (!files.length) return
-    setUploading(true); setMsg('')
+    setUploading(true); setMsg(''); setMsgType('info')
     const uploaded: string[] = []
+    const failures: string[] = []
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
-      if (file.size > 5 * 1024 * 1024) { setMsg(`${file.name} exceeds 5MB, skipped.`); continue }
+      if (file.size > 5 * 1024 * 1024) { failures.push(`${file.name} exceeds 5MB`); continue }
       setMsg(`Uploading ${file.name}…`)
-      const fd = new FormData(); fd.append('image', file)
-      const res  = await fetch('/api/upload-image', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (data.url) { uploaded.push(data.url); setProgress(Math.round((i+1)/files.length*100)) }
+      try {
+        const fd = new FormData(); fd.append('image', file)
+        const res  = await fetch('/api/upload-image', { method: 'POST', body: fd })
+        const data = await res.json()
+        if (data.url) { uploaded.push(data.url); setProgress(Math.round((i+1)/files.length*100)) }
+        else { failures.push(`${file.name}: ${data.error || 'upload failed'}`) }
+      } catch {
+        failures.push(`${file.name}: network error`)
+      }
     }
     if (uploaded.length) {
-      const res  = await fetch('/api/salon-photos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ salon_id: salonId, urls: uploaded }) })
-      const data = await res.json()
-      if (data.images) { setImages(data.images); router.refresh() }
-      setMsg(`✅ ${uploaded.length} photo(s) uploaded!`)
+      try {
+        const res  = await fetch('/api/salon-photos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ salon_id: salonId, urls: uploaded }) })
+        const data = await res.json()
+        if (data.images) {
+          setImages(data.images)
+          router.refresh()
+          setMsg(failures.length ? `✅ ${uploaded.length} uploaded, but: ${failures.join('; ')}` : `✅ ${uploaded.length} photo(s) uploaded!`)
+          setMsgType(failures.length ? 'error' : 'success')
+        } else {
+          setMsg(data.error || 'Could not save photos to your salon.')
+          setMsgType('error')
+        }
+      } catch {
+        setMsg('Network error while saving photos.')
+        setMsgType('error')
+      }
+    } else if (failures.length) {
+      setMsg(failures.join('; '))
+      setMsgType('error')
     }
     setUploading(false); setProgress(0)
     if (inputRef.current) inputRef.current.value = ''
@@ -38,9 +60,14 @@ export default function PhotoUpload({ salonId, images: initialImages }: PhotoUpl
 
   async function deletePhoto(url: string) {
     if (!confirm('Remove this photo?')) return
-    const res  = await fetch('/api/salon-photos', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ salon_id: salonId, url }) })
-    const data = await res.json()
-    if (data.images) { setImages(data.images); router.refresh() }
+    try {
+      const res  = await fetch('/api/salon-photos', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ salon_id: salonId, url }) })
+      const data = await res.json()
+      if (data.images) { setImages(data.images); router.refresh() }
+      else { setMsg(data.error || 'Could not remove photo.'); setMsgType('error') }
+    } catch {
+      setMsg('Network error while removing photo.'); setMsgType('error')
+    }
   }
 
   return (
@@ -63,7 +90,7 @@ export default function PhotoUpload({ salonId, images: initialImages }: PhotoUpl
       </div>
       <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => e.target.files && handleFiles(e.target.files)} />
       {uploading && <div className="h-1.5 bg-page-2 rounded-full overflow-hidden mb-2"><div className="h-full bg-rose transition-all" style={{ width:`${progress}%` }} /></div>}
-      {msg && <p className="text-sm text-ink-3">{msg}</p>}
+      {msg && <p className={`text-sm ${msgType === 'error' ? 'text-rose font-semibold' : msgType === 'success' ? 'text-gn font-semibold' : 'text-ink-3'}`}>{msg}</p>}
       <button onClick={() => inputRef.current?.click()} disabled={uploading} className="btn btn-outline btn-sm">📷 Upload Photos</button>
     </div>
   )

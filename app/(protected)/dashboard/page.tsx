@@ -5,9 +5,10 @@ import Link               from 'next/link'
 import { fmtPrice, formatDuration } from '@/lib/utils'
 import StatsCard          from '@/components/dashboard/StatsCard'
 import PhotoUpload        from '@/components/dashboard/PhotoUpload'
-import ServiceRow         from '@/components/salon/ServiceRow'
 import ReviewCard         from '@/components/salon/ReviewCard'
-import { addService, updateProfile, updateHours, updateEnquiryStatus } from '@/lib/actions/dashboard'
+import ActionForm         from '@/components/dashboard/ActionForm'
+import ActionButton       from '@/components/dashboard/ActionButton'
+import { addService, updateProfile, updateHours, updateEnquiryStatus, deleteService } from '@/lib/actions/dashboard'
 import { updateBookingStatus } from '@/lib/actions/bookings'
 
 export const dynamic = 'force-dynamic'
@@ -15,14 +16,19 @@ export const dynamic = 'force-dynamic'
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { tab?: string; msg?: string; bstatus?: string }
+  searchParams: { tab?: string; bstatus?: string; salon?: string }
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
 
-  const { data: salon } = await supabase.from('salons').select('*').eq('owner_id', user.id).single()
-  if (!salon) redirect('/business')
+  // An owner can have more than one salon. Fetch all of them, then pick which one
+  // is "active" for this view: the one named in ?salon=, falling back to the most
+  // recently created if that id is missing/invalid/not theirs.
+  const { data: mySalons } = await supabase.from('salons').select('*').eq('owner_id', user.id).order('created_at', { ascending: false })
+  if (!mySalons?.length) redirect('/business')
+
+  const salon = mySalons.find(s => s.id === searchParams.salon) || mySalons[0]
 
   const tab      = searchParams.tab    || 'overview'
   const bfilter  = searchParams.bstatus || 'all'
@@ -127,7 +133,7 @@ export default async function DashboardPage({
             <h1 className="text-white text-xl font-black">{salon.name} {salon.emoji}</h1>
             <p className="text-white/40 text-xs">📍 {salon.area}, {salon.city}{salon.postcode ? ` · ${salon.postcode}` : ''} · ★{salon.rating || '—'} · {salon.review_count} reviews</p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
             {salon.slug && (
               <Link href={`/salon/${salon.slug}`} target="_blank" className="btn btn-sm border-white/30 text-white border-2 bg-transparent hover:bg-white/10 text-xs">
                 👁 View Listing
@@ -138,19 +144,22 @@ export default async function DashboardPage({
             </span>
           </div>
         </div>
+
+        {/* Salon switcher — only shown once an owner has more than one salon */}
+        <div className="container flex items-center gap-2 flex-wrap mt-3">
+          {mySalons.length > 1 && mySalons.map(s => (
+            <Link key={s.id} href={`/dashboard?salon=${s.id}&tab=${tab}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${s.id === salon.id ? 'bg-white text-ink' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}>
+              {s.emoji} {s.name}
+            </Link>
+          ))}
+          <Link href="/business?new=1" className="px-3 py-1.5 rounded-full text-xs font-bold bg-white/10 text-white/70 hover:bg-white/20 border border-dashed border-white/30">
+            + Add Another Salon
+          </Link>
+        </div>
       </div>
 
       <div className="container py-6">
-        {/* Flash message */}
-        {searchParams.msg && (
-          <div className="alert-success mb-4">
-            {searchParams.msg === 'profile_saved'  && '✅ Profile saved!'}
-            {searchParams.msg === 'service_added'  && '✅ Service added!'}
-            {searchParams.msg === 'service_deleted'&& 'Service removed.'}
-            {searchParams.msg === 'hours_saved'    && '✅ Opening hours updated!'}
-          </div>
-        )}
-
         {/* Profile completion */}
         {completion < 100 && (
           <div className="card card-body mb-5 border-gold bg-yellow-50">
@@ -163,7 +172,7 @@ export default async function DashboardPage({
             </div>
             <div className="flex flex-wrap gap-2">
               {steps.map(s => (
-                <Link key={s.label} href={`/dashboard?tab=${s.tab}`}
+                <Link key={s.label} href={`/dashboard?salon=${salon.id}&tab=${s.tab}`}
                   className={`px-3 py-1 rounded-full text-xs font-bold ${s.done ? 'bg-green-100 text-gn' : 'bg-rose-100 text-rose'}`}>
                   {s.done ? '✓' : '+'} {s.label}
                 </Link>
@@ -175,7 +184,7 @@ export default async function DashboardPage({
         {/* Tabs */}
         <div className="tabs mb-6">
           {tabs.map(t => (
-            <Link key={t.id} href={`/dashboard?tab=${t.id}`}
+            <Link key={t.id} href={`/dashboard?salon=${salon.id}&tab=${t.id}`}
               className={`tab flex items-center gap-1.5 ${tab === t.id ? 'active' : ''}`}>
               {t.label}
               {t.badge ? (
@@ -203,7 +212,7 @@ export default async function DashboardPage({
               <div className="card card-body">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="font-bold">Upcoming Bookings</h2>
-                  <Link href="/dashboard?tab=bookings" className="text-xs text-rose font-bold">View all →</Link>
+                  <Link href={`/dashboard?salon=${salon.id}&tab=bookings`} className="text-xs text-rose font-bold">View all →</Link>
                 </div>
                 {!upcoming.length ? (
                   <div className="text-center py-8 text-ink-3">
@@ -211,8 +220,8 @@ export default async function DashboardPage({
                     <p className="text-sm font-semibold mb-1">No upcoming bookings</p>
                     <p className="text-xs">Make sure services and hours are set up</p>
                     <div className="flex gap-2 justify-center mt-3">
-                      <Link href="/dashboard?tab=services" className="btn btn-primary btn-sm">Add Services</Link>
-                      <Link href="/dashboard?tab=hours"    className="btn btn-outline btn-sm">Set Hours</Link>
+                      <Link href={`/dashboard?salon=${salon.id}&tab=services`} className="btn btn-primary btn-sm">Add Services</Link>
+                      <Link href={`/dashboard?salon=${salon.id}&tab=hours`}    className="btn btn-outline btn-sm">Set Hours</Link>
                     </div>
                   </div>
                 ) : upcoming.slice(0, 6).map(b => (
@@ -230,11 +239,11 @@ export default async function DashboardPage({
                 <h2 className="font-bold mb-4">Quick Actions</h2>
                 <div className="space-y-2.5">
                   {[
-                    ['/dashboard?tab=profile',  '✏️', 'Edit Profile & Photos'],
-                    ['/dashboard?tab=services', '➕', 'Add a Service'],
-                    ['/dashboard?tab=hours',    '🕐', 'Update Opening Hours'],
-                    ['/dashboard?tab=analytics','📈', 'View Analytics'],
-                    ['/dashboard?tab=enquiries','📩', `View Enquiries${unread ? ` (${unread} new)` : ''}`],
+                    [`/dashboard?salon=${salon.id}&tab=profile`,  '✏️', 'Edit Profile & Photos'],
+                    [`/dashboard?salon=${salon.id}&tab=services`, '➕', 'Add a Service'],
+                    [`/dashboard?salon=${salon.id}&tab=hours`,    '🕐', 'Update Opening Hours'],
+                    [`/dashboard?salon=${salon.id}&tab=analytics`,'📈', 'View Analytics'],
+                    [`/dashboard?salon=${salon.id}&tab=enquiries`,'📩', `View Enquiries${unread ? ` (${unread} new)` : ''}`],
                     [salon.slug ? `/salon/${salon.slug}` : '/dashboard', '👁', 'View Public Listing'],
                   ].map(([href, icon, label]) => (
                     <Link key={label as string} href={href as string} target={href!.startsWith('/salon') ? '_blank' : undefined}
@@ -360,13 +369,14 @@ export default async function DashboardPage({
           <div className="grid-2 items-start">
             <div className="card card-body">
               <h2 className="font-bold text-lg mb-5">Salon Details</h2>
-              <form action={updateProfile} className="space-y-4">
+              <ActionForm action={updateProfile} successMessage="Profile saved!" submitLabel="Save Profile →" className="space-y-4">
+                <input type="hidden" name="salon_id" value={salon.id}/>
                 <div>
                   <label className="label">Salon Name *</label>
-                  <input name="name" className="input" defaultValue={salon.name} required maxLength={100}/>
+                  <input name="name" className="input" defaultValue={salon.name} required minLength={2} maxLength={100}/>
                 </div>
                 <div>
-                  <label className="label">Description <span className="font-normal text-ink-3">(recommended)</span></label>
+                  <label className="label">Description <span className="font-normal text-ink-3">(recommended, 30+ characters to complete this step)</span></label>
                   <textarea name="description" className="input" rows={4} maxLength={1500}
                     placeholder="e.g. Specialist in knotless braids and natural hair in Peckham…"
                     defaultValue={salon.description || ''}/>
@@ -387,9 +397,9 @@ export default async function DashboardPage({
                 </div>
                 <div>
                   <label className="label">City</label>
-                  <select name="city" className="input">
+                  <select name="city" className="input" defaultValue={salon.city}>
                     {['London','Birmingham','Manchester','Leeds','Bristol','Sheffield','Nottingham','Leicester','Liverpool','Newcastle','Glasgow','Edinburgh','Cardiff','Other'].map(c => (
-                      <option key={c} value={c} selected={salon.city === c}>{c}</option>
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
@@ -413,7 +423,7 @@ export default async function DashboardPage({
                   </div>
                   <div>
                     <label className="label">Website</label>
-                    <input name="website" className="input" type="url" defaultValue={salon.website || ''} placeholder="https://"/>
+                    <input name="website" className="input" type="url" defaultValue={salon.website || ''} placeholder="https://yoursalon.co.uk"/>
                   </div>
                 </div>
                 <div>
@@ -431,13 +441,11 @@ export default async function DashboardPage({
                     <span className="text-sm font-semibold">Accept online bookings via GlowNaija</span>
                   </label>
                 </div>
-                <button type="submit" className="btn btn-primary w-full justify-center py-3.5">Save Profile →</button>
-              </form>
+              </ActionForm>
             </div>
 
             <div className="card card-body">
               <h2 className="font-bold text-lg mb-2">Salon Photos</h2>
-              <p className="text-sm text-ink-3 mb-4">Photos increase booking rates by 3×. Add at least 3 of your best work.</p>
               <PhotoUpload salonId={salon.id} images={salon.images || []}/>
             </div>
           </div>
@@ -449,7 +457,9 @@ export default async function DashboardPage({
             {/* Add service form */}
             <div className="card card-body border-gn">
               <h2 className="font-bold text-lg mb-5">➕ Add Service</h2>
-              <form action={addService} className="space-y-4">
+              <ActionForm action={addService} successMessage="Service added!" submitLabel="Add Service →"
+                submitClassName="btn btn-green w-full justify-center py-3.5 mt-4" resetOnSuccess className="space-y-4">
+                <input type="hidden" name="salon_id" value={salon.id}/>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="label">Icon</label>
@@ -470,7 +480,7 @@ export default async function DashboardPage({
                 </div>
                 <div>
                   <label className="label">Service Name *</label>
-                  <input name="svc_name" className="input" required maxLength={80} placeholder="e.g. Knotless Box Braids (Medium)"/>
+                  <input name="svc_name" className="input" required minLength={2} maxLength={80} placeholder="e.g. Knotless Box Braids (Medium)"/>
                 </div>
                 <div>
                   <label className="label">Description <span className="font-normal text-ink-3">(optional)</span></label>
@@ -483,15 +493,14 @@ export default async function DashboardPage({
                   </div>
                   <div>
                     <label className="label">Duration</label>
-                    <select name="svc_duration" className="input">
+                    <select name="svc_duration" className="input" defaultValue="60">
                       {svcDurations.map(d => (
-                        <option key={d} value={d} selected={d===60}>{durLabel(d)}</option>
+                        <option key={d} value={d}>{durLabel(d)}</option>
                       ))}
                     </select>
                   </div>
                 </div>
-                <button type="submit" className="btn btn-green w-full justify-center py-3.5">Add Service →</button>
-              </form>
+              </ActionForm>
             </div>
 
             {/* Service list */}
@@ -522,15 +531,9 @@ export default async function DashboardPage({
                           </div>
                           <div className="text-right flex-shrink-0 ml-3">
                             <p className="font-black">{fmtPrice(s.price)}</p>
-                            <form action={async () => {
-                              'use server'
-                              const { createClient } = await import('@/lib/supabase/server')
-                              const sb = await createClient()
-                              await sb.from('services').update({is_active:false}).eq('id',s.id)
-                              redirect('/dashboard?tab=services&msg=service_deleted')
-                            }}>
-                              <button className="text-xs text-rose hover:underline mt-0.5">Remove</button>
-                            </form>
+                            <ActionButton action={() => deleteService(s.id, salon.id)} className="text-xs text-rose hover:underline mt-0.5" confirmMessage={`Remove "${s.name}"?`}>
+                              Remove
+                            </ActionButton>
                           </div>
                         </div>
                       ))}
@@ -546,8 +549,9 @@ export default async function DashboardPage({
         {tab === 'hours' && (
           <div className="card card-body max-w-lg">
             <h2 className="font-bold text-lg mb-2">Opening Hours</h2>
-            <p className="text-sm text-ink-3 mb-5">These control which booking slots appear on your listing.</p>
-            <form action={updateHours} className="space-y-1">
+            <p className="text-sm text-ink-3 mb-5">These control which booking slots appear on your listing. Times shown below are only saved once you click "Save Opening Hours".</p>
+            <ActionForm action={updateHours} successMessage="Opening hours updated!" submitLabel="Save Opening Hours →" className="space-y-1">
+              <input type="hidden" name="salon_id" value={salon.id}/>
               {days.map((day, d) => {
                 const h      = hoursMap[d]
                 const closed = h?.is_closed ?? (d === 0)
@@ -569,8 +573,7 @@ export default async function DashboardPage({
                   </div>
                 )
               })}
-              <button type="submit" className="btn btn-primary w-full justify-center py-3.5 mt-5">Save Opening Hours →</button>
-            </form>
+            </ActionForm>
           </div>
         )}
 
@@ -580,7 +583,7 @@ export default async function DashboardPage({
             {/* Filter bar */}
             <div className="flex gap-2 flex-wrap mb-5 items-center">
               {['all','pending','confirmed','completed','cancelled','no_show'].map(st => (
-                <Link key={st} href={`/dashboard?tab=bookings&bstatus=${st}`}
+                <Link key={st} href={`/dashboard?salon=${salon.id}&tab=bookings&bstatus=${st}`}
                   className={`btn btn-sm text-xs ${bfilter === st ? 'bg-ink text-white' : 'bg-page-2 text-ink-2 hover:bg-page'}`}>
                   {st === 'all' ? 'All' : st.replace('_',' ').replace(/^\w/,c=>c.toUpperCase())}
                   {' '}({st === 'all' ? bookings?.length : bookings?.filter(b=>b.status===st).length})
@@ -594,8 +597,8 @@ export default async function DashboardPage({
                 <p className="font-bold text-lg mb-2">{bfilter === 'all' ? 'No bookings yet' : `No ${bfilter.replace('_',' ')} bookings`}</p>
                 {bfilter === 'all' && (
                   <div className="flex gap-2 justify-center mt-3">
-                    <Link href="/dashboard?tab=services" className="btn btn-primary btn-sm">Add Services</Link>
-                    <Link href="/dashboard?tab=hours"    className="btn btn-outline btn-sm">Set Hours</Link>
+                    <Link href={`/dashboard?salon=${salon.id}&tab=services`} className="btn btn-primary btn-sm">Add Services</Link>
+                    <Link href={`/dashboard?salon=${salon.id}&tab=hours`}    className="btn btn-outline btn-sm">Set Hours</Link>
                   </div>
                 )}
               </div>
@@ -629,19 +632,11 @@ export default async function DashboardPage({
                     {['pending','confirmed'].includes(b.status) && (
                       <div className="flex gap-2 flex-wrap pt-3 border-t border-bdr">
                         {b.status === 'pending' && (
-                          <form action={async () => { 'use server'; await updateBookingStatus(b.id, 'confirmed'); redirect('/dashboard?tab=bookings') }}>
-                            <button className="btn btn-green btn-sm">✓ Confirm</button>
-                          </form>
+                          <ActionButton action={() => updateBookingStatus(b.id, 'confirmed')} className="btn btn-green btn-sm">✓ Confirm</ActionButton>
                         )}
-                        <form action={async () => { 'use server'; await updateBookingStatus(b.id, 'completed'); redirect('/dashboard?tab=bookings') }}>
-                          <button className="btn btn-sm bg-blue-500 text-white hover:bg-blue-600">✓ Complete</button>
-                        </form>
-                        <form action={async () => { 'use server'; await updateBookingStatus(b.id, 'no_show'); redirect('/dashboard?tab=bookings') }}>
-                          <button className="btn btn-outline btn-sm">No Show</button>
-                        </form>
-                        <form action={async () => { 'use server'; await updateBookingStatus(b.id, 'cancelled'); redirect('/dashboard?tab=bookings') }}>
-                          <button className="btn btn-outline btn-sm text-rose border-rose/50 hover:border-rose">Cancel</button>
-                        </form>
+                        <ActionButton action={() => updateBookingStatus(b.id, 'completed')} className="btn btn-sm bg-blue-500 text-white hover:bg-blue-600">✓ Complete</ActionButton>
+                        <ActionButton action={() => updateBookingStatus(b.id, 'no_show')} className="btn btn-outline btn-sm">No Show</ActionButton>
+                        <ActionButton action={() => updateBookingStatus(b.id, 'cancelled')} className="btn btn-outline btn-sm text-rose border-rose/50 hover:border-rose" confirmMessage="Cancel this booking?">Cancel</ActionButton>
                       </div>
                     )}
                   </div>
@@ -690,13 +685,9 @@ export default async function DashboardPage({
                       </div>
                       <div className="flex gap-2">
                         {e.status === 'unread' && (
-                          <form action={async () => { 'use server'; await updateEnquiryStatus(e.id, 'read'); redirect('/dashboard?tab=enquiries') }}>
-                            <button className="btn btn-outline btn-sm text-xs">Mark Read</button>
-                          </form>
+                          <ActionButton action={() => updateEnquiryStatus(e.id, 'read')} className="btn btn-outline btn-sm text-xs">Mark Read</ActionButton>
                         )}
-                        <form action={async () => { 'use server'; await updateEnquiryStatus(e.id, 'archived'); redirect('/dashboard?tab=enquiries') }}>
-                          <button className="btn btn-outline btn-sm text-xs text-ink-3">Archive</button>
-                        </form>
+                        <ActionButton action={() => updateEnquiryStatus(e.id, 'archived')} className="btn btn-outline btn-sm text-xs text-ink-3">Archive</ActionButton>
                       </div>
                     </div>
                     {e.subject && <p className="font-semibold text-sm mb-2">{e.subject}</p>}

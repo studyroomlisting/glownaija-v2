@@ -3,14 +3,24 @@
 import { revalidatePath } from 'next/cache'
 import { redirect }       from 'next/navigation'
 import { createClient }   from '@/lib/supabase/server'
+import { isValidEmail, isValidPhone, isValidUKPostcode } from '@/lib/utils'
+
+// Every action below verifies ownership against the SPECIFIC salon_id passed in,
+// not just "the salon this owner has" — a single owner can now have multiple
+// salons, so `.eq('owner_id', user.id).single()` would be ambiguous/wrong.
+async function getOwnedSalon(supabase: any, userId: string, salonId: string) {
+  const { data: salon } = await supabase.from('salons').select('id').eq('id', salonId).eq('owner_id', userId).single()
+  return salon
+}
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
 
-  const { data: salon } = await supabase.from('salons').select('id').eq('owner_id', user.id).single()
-  if (!salon) return { error: 'No salon found.' }
+  const salonId = formData.get('salon_id') as string
+  const salon = await getOwnedSalon(supabase, user.id, salonId)
+  if (!salon) return { error: 'Salon not found, or you do not have access to it.' }
 
   const name      = (formData.get('name')        as string).trim()
   const area      = (formData.get('area')        as string).trim()
@@ -25,15 +35,22 @@ export async function updateProfile(formData: FormData) {
   const online_bk = formData.get('accepts_online_bookings') === 'on'
   const tagsRaw   = (formData.get('tags') as string || '').split(',').map(t => t.trim()).filter(Boolean)
 
-  if (!name || name.length < 2) return { error: 'Salon name is required.' }
-  if (!area) return { error: 'Area is required.' }
+  if (!name || name.length < 2) return { error: 'Salon name is required (min 2 characters).' }
+  if (!area)                    return { error: 'Area is required.' }
+  if (phone && !isValidPhone(phone))         return { error: 'Please enter a valid phone number.' }
+  if (email && !isValidEmail(email))         return { error: 'Please enter a valid email address.' }
+  if (postcode && !isValidUKPostcode(postcode)) return { error: 'Please enter a valid UK postcode.' }
+  if (website && !/^https?:\/\/.+\..+/.test(website)) return { error: 'Website must be a full URL, e.g. https://yoursalon.co.uk' }
+  if (instagram && !/^[a-zA-Z0-9._]{1,30}$/.test(instagram)) return { error: 'Instagram handle looks invalid — letters, numbers, dots and underscores only.' }
 
-  await supabase.from('salons').update({
+  const { error } = await supabase.from('salons').update({
     name, area, city, description: desc || null,
     phone: phone || null, email: email || null,
     instagram: instagram || null, website: website || null,
     postcode: postcode || null, is_open, accepts_online_bookings: online_bk, tags: tagsRaw,
   }).eq('id', salon.id)
+
+  if (error) return { error: `Could not save profile: ${error.message}` }
 
   revalidatePath('/dashboard')
   return { success: true }
@@ -44,40 +61,47 @@ export async function addService(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
 
-  const { data: salon } = await supabase.from('salons').select('id').eq('owner_id', user.id).single()
-  if (!salon) return { error: 'No salon found.' }
+  const salonId = formData.get('salon_id') as string
+  const salon = await getOwnedSalon(supabase, user.id, salonId)
+  if (!salon) return { error: 'Salon not found, or you do not have access to it.' }
 
-  const name  = (formData.get('svc_name')  as string).trim()
-  const price = parseInt((formData.get('svc_price') as string || '0').replace('.', ''))
+  const name       = (formData.get('svc_name')  as string || '').trim()
+  const priceInput = (formData.get('svc_price') as string || '').trim()
+  const priceValue = parseFloat(priceInput)
 
-  if (!name || name.length < 2) return { error: 'Service name is required.' }
-  if (!price || price <= 0)      return { error: 'Please enter a valid price.' }
+  if (!name || name.length < 2)              return { error: 'Service name is required (min 2 characters).' }
+  if (!priceInput || isNaN(priceValue) || priceValue <= 0) return { error: 'Please enter a valid price greater than £0.' }
+  if (priceValue > 9999)                     return { error: 'Price seems too high — please check and try again.' }
 
   const { count } = await supabase.from('services').select('*', { count: 'exact', head: true }).eq('salon_id', salon.id)
 
-  await supabase.from('services').insert({
+  const { error } = await supabase.from('services').insert({
     salon_id: salon.id, name,
     description: (formData.get('svc_desc') as string || '').trim() || null,
     emoji:    (formData.get('svc_emoji')    as string) || '✂️',
-    price:    Math.round(parseFloat(formData.get('svc_price') as string) * 100),
+    price:    Math.round(priceValue * 100),
     duration_minutes: parseInt(formData.get('svc_duration') as string || '60'),
     category: (formData.get('svc_category') as string) || 'natural',
     sort_order: (count || 0) + 1,
   })
 
+  if (error) return { error: `Could not add service: ${error.message}` }
+
   revalidatePath('/dashboard')
   return { success: true }
 }
 
-export async function deleteService(serviceId: string) {
+export async function deleteService(serviceId: string, salonId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not logged in' }
 
-  const { data: salon } = await supabase.from('salons').select('id').eq('owner_id', user.id).single()
+  const salon = await getOwnedSalon(supabase, user.id, salonId)
   if (!salon) return { error: 'Not authorised' }
 
-  await supabase.from('services').update({ is_active: false }).eq('id', serviceId).eq('salon_id', salon.id)
+  const { error } = await supabase.from('services').update({ is_active: false }).eq('id', serviceId).eq('salon_id', salon.id)
+  if (error) return { error: `Could not remove service: ${error.message}` }
+
   revalidatePath('/dashboard')
   return { success: true }
 }
@@ -87,8 +111,9 @@ export async function updateHours(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
 
-  const { data: salon } = await supabase.from('salons').select('id').eq('owner_id', user.id).single()
-  if (!salon) return { error: 'No salon found.' }
+  const salonId = formData.get('salon_id') as string
+  const salon = await getOwnedSalon(supabase, user.id, salonId)
+  if (!salon) return { error: 'Salon not found, or you do not have access to it.' }
 
   for (let d = 0; d < 7; d++) {
     const closed = formData.get(`closed[${d}]`) === 'on'
@@ -99,9 +124,11 @@ export async function updateHours(formData: FormData) {
 
     const { data: existing } = await supabase.from('salon_opening_hours').select('id').eq('salon_id', salon.id).eq('day_of_week', d).single()
     if (existing) {
-      await supabase.from('salon_opening_hours').update({ is_closed: closed, open_time: closed ? null : open, close_time: closed ? null : close }).eq('id', existing.id)
+      const { error } = await supabase.from('salon_opening_hours').update({ is_closed: closed, open_time: closed ? null : open, close_time: closed ? null : close }).eq('id', existing.id)
+      if (error) return { error: `Could not save hours: ${error.message}` }
     } else {
-      await supabase.from('salon_opening_hours').insert({ salon_id: salon.id, day_of_week: d, is_closed: closed, open_time: closed ? null : open, close_time: closed ? null : close })
+      const { error } = await supabase.from('salon_opening_hours').insert({ salon_id: salon.id, day_of_week: d, is_closed: closed, open_time: closed ? null : open, close_time: closed ? null : close })
+      if (error) return { error: `Could not save hours: ${error.message}` }
     }
   }
   revalidatePath('/dashboard')
@@ -114,7 +141,16 @@ export async function updateEnquiryStatus(enquiryId: string, status: string) {
   if (!user) return { error: 'Not logged in' }
   const allowed = ['read','replied','archived']
   if (!allowed.includes(status)) return { error: 'Invalid status' }
-  await supabase.from('enquiries').update({ status }).eq('id', enquiryId)
+
+  // Verify this enquiry belongs to a salon this user actually owns before allowing the update.
+  const { data: enquiry } = await supabase.from('enquiries').select('id,salon_id').eq('id', enquiryId).single()
+  if (!enquiry) return { error: 'Enquiry not found.' }
+  const salon = await getOwnedSalon(supabase, user.id, enquiry.salon_id)
+  if (!salon) return { error: 'Not authorised' }
+
+  const { error } = await supabase.from('enquiries').update({ status }).eq('id', enquiryId)
+  if (error) return { error: `Could not update enquiry: ${error.message}` }
+
   revalidatePath('/dashboard')
   return { success: true }
 }

@@ -4,12 +4,18 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import BusinessForm from '@/components/business/BusinessForm'
 
-export default async function BusinessPage() {
+export default async function BusinessPage({ searchParams }: { searchParams: { new?: string } }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
-  const { data: existing } = await supabase.from('salons').select('id').eq('owner_id',user.id).single()
-  if (existing) redirect('/dashboard')
+  // Owners can list more than one salon — ?new=1 (used by the "Add Another Salon" link
+  // in the dashboard) skips the existing-salon redirect below. Without it, this page
+  // keeps its original behaviour: an owner who already has a salon is sent straight
+  // to their dashboard instead of seeing the listing form again.
+  if (!searchParams.new) {
+    const { data: existing } = await supabase.from('salons').select('id').eq('owner_id',user.id).single()
+    if (existing) redirect('/dashboard')
+  }
 
   const bTypes = ['Hair Salon','Locs Specialist','Wig Studio','Nail Bar','Makeup Artist','Skincare Studio','Mobile Stylist','Beauty Spa','Barbershop','Afro Barber','Threading & Waxing','Eyebrow Studio','Eyelash Studio','Bridal Studio','Other']
   const cities  = ['London','Birmingham','Manchester','Leeds','Bristol','Sheffield','Nottingham','Leicester','Liverpool','Newcastle','Glasgow','Edinburgh','Cardiff','Other']
