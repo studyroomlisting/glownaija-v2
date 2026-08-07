@@ -157,7 +157,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
                 <h2 className="font-bold text-lg">{editingProduct ? `Edit "${editingProduct.name}"` : 'Add New Product'}</h2>
                 {editingProduct && <Link href="/admin?tab=products" className="text-xs text-rose font-bold">+ Add new instead</Link>}
               </div>
-              <ProductForm product={editingProduct} />
+              <ProductForm key={editingProduct?.id || 'new'} product={editingProduct} />
             </div>
             <div>
               <h2 className="font-bold text-lg mb-3">All Products ({products?.length || 0})</h2>

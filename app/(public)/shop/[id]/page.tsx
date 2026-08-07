@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 import { createClient }     from '@/lib/supabase/server'
 import { notFound }         from 'next/navigation'
 import Link                 from 'next/link'
-import Image                from 'next/image'
 import type { Metadata }    from 'next'
 import { fmtPrice }         from '@/lib/utils'
 import ProductCard          from '@/components/shop/ProductCard'
@@ -64,7 +63,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
             {/* Main image */}
             <div className="aspect-square bg-page-2 rounded-2xl overflow-hidden mb-3 relative">
               {p.images?.[0]
-                ? <Image src={p.images[0]} alt={p.name} fill className="object-cover"/>
+                ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover"/>
                 : <div className="absolute inset-0 flex items-center justify-center text-9xl">🧴</div>
               }
               {hasDiscount && (
@@ -78,7 +77,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
               <div className="flex gap-2">
                 {p.images!.slice(0, 5).map((img, i) => (
                   <div key={i} className="w-16 h-16 rounded-xl overflow-hidden border-2 border-bdr hover:border-rose transition-colors cursor-pointer">
-                    <Image src={img} alt={`${p.name} ${i+1}`} width={64} height={64} className="w-full h-full object-cover"/>
+                    <img src={img} alt={`${p.name} ${i+1}`} className="w-full h-full object-cover"/>
                   </div>
                 ))}
               </div>

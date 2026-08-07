@@ -1,5 +1,6 @@
 'use client'
 import ActionForm from '@/components/dashboard/ActionForm'
+import ProductPhotoUpload from '@/components/admin/ProductPhotoUpload'
 import { saveProduct } from '@/lib/actions/products'
 import type { Product } from '@/types/database'
 
@@ -70,10 +71,7 @@ export default function ProductForm({ product, onDone }: { product?: Product | n
         </div>
       </div>
 
-      <div>
-        <label className="label">Image URLs <span className="font-normal text-ink-3">(comma separated — paste direct image links)</span></label>
-        <input name="images" className="input" defaultValue={product?.images?.join(', ') || ''} placeholder="https://…jpg, https://…jpg" />
-      </div>
+      <ProductPhotoUpload initialImages={product?.images || []} />
 
       <div className="grid grid-cols-2 gap-3">
         <div>
