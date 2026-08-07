@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect }       from 'next/navigation'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { isValidEmail, isValidName, isValidPhone } from '@/lib/utils'
+import { isValidEmail, isValidName, isValidPhone, ukDateString } from '@/lib/utils'
 
 export async function createEvent(formData: FormData) {
   const supabase = await createClient()
@@ -26,7 +26,7 @@ export async function createEvent(formData: FormData) {
   // Validation
   if (!title || title.length < 3)
     return { error: 'Title must be at least 3 characters.' }
-  if (!date || date <= new Date().toISOString().split('T')[0])
+  if (!date || date <= ukDateString())
     return { error: 'Event date must be in the future.' }
   if (!time_start || !time_end)
     return { error: 'Start and end times are required.' }

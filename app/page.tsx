@@ -9,6 +9,7 @@ import Footer            from '@/components/layout/Footer'
 import SalonCard         from '@/components/salon/SalonCard'
 import ProductCard       from '@/components/shop/ProductCard'
 import ScrollRow         from '@/components/home/ScrollRow'
+import { ukDateString }  from '@/lib/utils'
 
 export const revalidate = 3600 // revalidate hourly
 
@@ -24,7 +25,7 @@ export default async function HomePage() {
   ] = await Promise.all([
     supabase.from('salons').select('*').eq('listing_status','approved').eq('is_active',true).eq('is_featured',true).order('rating',{ascending:false}).limit(6),
     supabase.from('products').select('*').eq('is_active',true).order('rating',{ascending:false}).limit(4),
-    supabase.from('events').select('*').eq('is_active',true).gte('event_date', new Date().toISOString().split('T')[0]).order('event_date').limit(3),
+    supabase.from('events').select('*').eq('is_active',true).gte('event_date', ukDateString()).order('event_date').limit(3),
     supabase.from('salons').select('*',{count:'exact',head:true}).eq('is_active',true).eq('listing_status','approved'),
     supabase.from('profiles').select('*',{count:'exact',head:true}),
   ])

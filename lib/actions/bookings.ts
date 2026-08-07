@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect }       from 'next/navigation'
 import { createClient }   from '@/lib/supabase/server'
-import { generateRef }    from '@/lib/utils'
+import { generateRef, ukDateString, ukTimeString } from '@/lib/utils'
 
 export async function createBooking(formData: FormData) {
   const supabase = await createClient()
@@ -17,11 +17,10 @@ export async function createBooking(formData: FormData) {
   const notes       = (formData.get('notes') as string || '').trim()
 
   if (!salon_id || !date || !time_slot) return { error: 'Missing required fields.' }
-  if (date < new Date().toISOString().split('T')[0]) return { error: 'Date must be today or later.' }
+  if (date < ukDateString()) return { error: 'Date must be today or later.' }
 
-  const nowStr = new Date().toISOString().split('T')[0]
-  if (date === nowStr) {
-    const nowTime = new Date().toTimeString().substring(0, 5)
+  if (date === ukDateString()) {
+    const nowTime = ukTimeString()
     if (time_slot <= nowTime) return { error: 'That time has already passed. Please choose a later slot.' }
   }
 

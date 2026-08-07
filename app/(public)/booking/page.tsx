@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import SlotPicker from '@/components/booking/SlotPicker'
 import { createBooking } from '@/lib/actions/bookings'
-import { fmtPrice, formatDuration } from '@/lib/utils'
+import { fmtPrice, formatDuration, ukDateString } from '@/lib/utils'
 
 export default function BookingPage() {
   const sp = useSearchParams()
@@ -24,8 +24,7 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
 
-  const today = new Date()
-  const minDate = today.toISOString().split('T')[0]
+  const minDate = ukDateString()
 
   useEffect(() => {
     if (!salonId) { setLoadingInfo(false); return }

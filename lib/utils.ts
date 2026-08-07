@@ -44,6 +44,30 @@ export function isValidUKPostcode(pc: string): boolean {
   return /^[A-Z]{1,2}[0-9R][0-9A-Z]?\s?[0-9][A-Z]{2}$/i.test(pc)
 }
 
+/**
+ * Today's date as YYYY-MM-DD in the UK's actual local time (Europe/London),
+ * not the server/browser's own timezone. This app is UK-only — every "is this
+ * today / is this in the past" check must be anchored to UK time, especially
+ * server-side (Vercel always runs in UTC, which silently drifts from UK time
+ * during BST and can be flat-out wrong near midnight).
+ */
+export function ukDateString(d: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(d)
+  const get = (t: string) => parts.find(p => p.type === t)?.value
+  return `${get('year')}-${get('month')}-${get('day')}`
+}
+
+/** Current time as HH:MM in UK local time (Europe/London), BST/GMT-aware. */
+export function ukTimeString(d: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d)
+  const get = (t: string) => parts.find(p => p.type === t)?.value
+  return `${get('hour')}:${get('minute')}`
+}
+
 export function isValidPhone(phone: string): boolean {
   return /^[0-9+\s()\-]{7,20}$/.test(phone)
 }

@@ -1,13 +1,13 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { generateSlots } from '@/lib/utils'
+import { generateSlots, ukDateString } from '@/lib/utils'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const salonId = searchParams.get('salon_id') || ''
   const date    = searchParams.get('date')      || ''
-  const today   = new Date().toISOString().split('T')[0]
+  const today   = ukDateString()
 
   if (!salonId || !date || date < today)
     return NextResponse.json({ error: 'Invalid params' }, { status: 400 })

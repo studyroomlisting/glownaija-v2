@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import SalonCard from '@/components/salon/SalonCard'
 import ProductCard from '@/components/shop/ProductCard'
+import { ukDateString } from '@/lib/utils'
 
 export default async function SearchPage({ searchParams }: { searchParams: { q?: string; type?: string } }) {
   const q = searchParams.q?.trim() || ''
@@ -12,7 +13,7 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
     const s = supabase; const t = searchParams.type || 'all'
     if (t==='all'||t==='salons')   { const {data} = await s.from('salons').select('*').eq('listing_status','approved').eq('is_active',true).or(`name.ilike.%${q}%,area.ilike.%${q}%,city.ilike.%${q}%`).order('rating',{ascending:false}).limit(9); salons=data||[] }
     if (t==='all'||t==='products') { const {data} = await s.from('products').select('*').eq('is_active',true).or(`name.ilike.%${q}%,brand.ilike.%${q}%`).order('rating',{ascending:false}).limit(8); products=data||[] }
-    if (t==='all'||t==='events')   { const {data} = await s.from('events').select('*').eq('is_active',true).gte('event_date',new Date().toISOString().split('T')[0]).or(`title.ilike.%${q}%,city.ilike.%${q}%`).order('event_date').limit(6); events=data||[] }
+    if (t==='all'||t==='events')   { const {data} = await s.from('events').select('*').eq('is_active',true).gte('event_date',ukDateString()).or(`title.ilike.%${q}%,city.ilike.%${q}%`).order('event_date').limit(6); events=data||[] }
   }
   const total = salons.length+products.length+events.length
   return (

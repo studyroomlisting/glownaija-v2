@@ -2,7 +2,7 @@
 import { createClient }   from '@/lib/supabase/server'
 import { redirect }       from 'next/navigation'
 import Link               from 'next/link'
-import { fmtPrice }       from '@/lib/utils'
+import { fmtPrice, ukDateString }       from '@/lib/utils'
 import { cancelBooking }  from '@/lib/actions/bookings'
 import { updateProfile }  from '@/lib/actions/account'
 import { signOut }        from '@/lib/actions/auth'
@@ -71,7 +71,7 @@ export default async function AccountPage({
   const notifications = notificationsRaw as any[]  || []
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const today    = new Date().toISOString().split('T')[0]
+  const today    = ukDateString()
   const upcoming = (bookings as any[])?.filter((b: any) =>
     ['pending','confirmed'].includes(b.status) && b.booking_date >= today
   ) || []

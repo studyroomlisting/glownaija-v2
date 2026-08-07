@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createEvent } from '@/lib/actions/events'
 import PageHero from '@/components/layout/PageHero'
 import ActionForm from '@/components/dashboard/ActionForm'
+import { ukDateString } from '@/lib/utils'
 
 export default async function CreateEventPage() {
   const supabase = await createClient()
@@ -45,7 +46,7 @@ export default async function CreateEventPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="label">Date *</label>
-                <input name="event_date" type="date" className="input" min={new Date(Date.now() + 86400000).toISOString().split('T')[0]} required/>
+                <input name="event_date" type="date" className="input" min={ukDateString(new Date(Date.now() + 86400000))} required/>
               </div>
               <div>
                 <label className="label">City *</label>

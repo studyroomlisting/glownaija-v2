@@ -3,10 +3,10 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import PageHero from '@/components/layout/PageHero'
-import { fmtPrice } from '@/lib/utils'
+import { fmtPrice, ukDateString } from '@/lib/utils'
 export default async function EventsPage({ searchParams }: { searchParams: { city?: string; type?: string } }) {
   const supabase = await createClient()
-  const today = new Date().toISOString().split('T')[0]
+  const today = ukDateString()
   let q = supabase.from('events').select('*').eq('is_active',true).gte('event_date',today).order('event_date')
   if (searchParams.city) q = q.eq('city', searchParams.city)
   if (searchParams.type) q = q.eq('event_type', searchParams.type)

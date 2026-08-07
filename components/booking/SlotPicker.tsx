@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { cn } from '@/lib/utils'
+import { cn, ukDateString, ukTimeString } from '@/lib/utils'
 
 interface SlotPickerProps {
   salonId: string
@@ -14,9 +14,17 @@ export default function SlotPicker({ salonId, date, onSelect, selected }: SlotPi
   const [taken,  setTaken]  = useState<string[]>([])
   const [closed, setClosed] = useState(false)
   const [loading,setLoading]= useState(false)
+  const [now,    setNow]    = useState(() => new Date())
 
-  const isToday = date === new Date().toISOString().split('T')[0]
-  const nowHHMM = new Date().toTimeString().substring(0, 5)
+  // Re-check the clock every 30s so a slot that just passed greys out live,
+  // without needing the user to touch anything or reload the page.
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const isToday = date === ukDateString(now)
+  const nowHHMM = ukTimeString(now)
 
   useEffect(() => {
     if (!salonId || !date) return

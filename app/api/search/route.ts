@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { ukDateString } from '@/lib/utils'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (type === 'all' || type === 'events') {
-    const today = new Date().toISOString().split('T')[0]
+    const today = ukDateString()
     const { data } = await supabase.from('events').select('id,title,emoji,city,event_date,price,is_free,image_url')
       .eq('is_active', true).gte('event_date', today)
       .or(`title.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%`)

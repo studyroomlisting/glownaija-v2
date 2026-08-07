@@ -3,14 +3,14 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { registerForEvent } from '@/lib/actions/events'
-import { fmtPrice } from '@/lib/utils'
+import { fmtPrice, ukDateString } from '@/lib/utils'
 export default async function EventPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
   const { data: e } = await supabase.from('events').select('*').eq('id', params.id).eq('is_active',true).single()
   if (!e) notFound()
   const { data: { user } } = await supabase.auth.getUser()
   const isFull = e.rsvp_count >= e.capacity
-  const isPast = e.event_date < new Date().toISOString().split('T')[0]
+  const isPast = e.event_date < ukDateString()
   return (
     <div className="container py-10 max-w-3xl">
       <div className="h-56 rounded-2xl bg-gradient-to-br from-ink to-purple-800 mb-6 relative overflow-hidden">

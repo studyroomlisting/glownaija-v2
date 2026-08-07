@@ -2,7 +2,7 @@
 import { createClient }   from '@/lib/supabase/server'
 import { redirect }       from 'next/navigation'
 import Link               from 'next/link'
-import { fmtPrice, formatDuration } from '@/lib/utils'
+import { fmtPrice, formatDuration, ukDateString } from '@/lib/utils'
 import StatsCard          from '@/components/dashboard/StatsCard'
 import PhotoUpload        from '@/components/dashboard/PhotoUpload'
 import ReviewCard         from '@/components/salon/ReviewCard'
@@ -55,7 +55,7 @@ export default async function DashboardPage({
   ])
 
   // ── Derived stats ────────────────────────────────────────────────────────
-  const today    = new Date().toISOString().split('T')[0]
+  const today    = ukDateString()
   const thisMonth= new Date().toISOString().slice(0, 7)
   const lastMonth= new Date(new Date().setMonth(new Date().getMonth()-1)).toISOString().slice(0,7)
 
