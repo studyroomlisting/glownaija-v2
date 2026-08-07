@@ -13,6 +13,7 @@ import ProductRow  from '@/components/admin/ProductRow'
 import StatsCard from '@/components/dashboard/StatsCard'
 import DashboardSidebar from '@/components/layout/DashboardSidebar'
 import { expireStaleBookings } from '@/lib/bookings-expiry'
+import { fmtPrice } from '@/lib/utils'
 
 export default async function AdminPage({ searchParams }: { searchParams: { tab?: string; status?: string; edit?: string } }) {
   const supabase = await createClient()
@@ -28,19 +29,31 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
 
   const [
     { count: salons_count },
-    { count: users_count },
+    { count: customers_count },
+    { count: owners_count },
     { count: bookings_count },
     { count: orders_count },
     { count: pending_count },
     { count: products_count },
+    { data: recentBookings },
+    { data: recentOrders },
   ] = await Promise.all([
     supabase.from('salons').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('account_type', 'customer'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('account_type', 'owner'),
     supabase.from('bookings').select('*', { count: 'exact', head: true }).gte('booking_date', new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]),
     supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString()),
     supabase.from('salons').select('*', { count: 'exact', head: true }).eq('listing_status', 'pending'),
     supabase.from('products').select('*', { count: 'exact', head: true }),
+    // Revenue is deposits actually collected on bookings (deposit_paid=true), not the
+    // full booking value (the remainder is paid in-person, outside the platform).
+    supabase.from('bookings').select('deposit_amount').eq('deposit_paid', true).gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString()),
+    // Orders count toward revenue once actually paid — 'pending'/'cancelled'/'refunded' don't.
+    supabase.from('orders').select('total').in('status', ['paid', 'shipped', 'delivered']).gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString()),
   ])
+  const users_count = (customers_count || 0) + (owners_count || 0)
+  const revenue30d = (recentBookings || []).reduce((s, b) => s + (b.deposit_amount || 0), 0)
+                    + (recentOrders   || []).reduce((s, o) => s + (o.total || 0), 0)
 
   let salonsQuery = supabase.from('salons').select('*').order('created_at', { ascending: false }).limit(30)
   if (searchParams.status) salonsQuery = salonsQuery.eq('listing_status', searchParams.status)
@@ -107,10 +120,16 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
         {tab === 'overview' && (
           <div className="space-y-5">
             <div className="grid-4">
+              <StatsCard icon="💰" label="Revenue (30d)" value={fmtPrice(revenue30d)}/>
               <StatsCard icon="🏪" label="Active Salons" value={salons_count || 0}/>
-              <StatsCard icon="👥" label="Users" value={users_count || 0}/>
               <StatsCard icon="📅" label="Bookings (30d)" value={bookings_count || 0}/>
               <StatsCard icon="🛍️" label="Orders (30d)" value={orders_count || 0}/>
+            </div>
+            <div className="grid-4">
+              <StatsCard icon="🙋" label="Customers" value={customers_count || 0}/>
+              <StatsCard icon="💇" label="Salon Owners" value={owners_count || 0}/>
+              <StatsCard icon="⏳" label="Pending Approvals" value={pending_count || 0}/>
+              <StatsCard icon="🧴" label="Products" value={products_count || 0}/>
             </div>
             <div className="card card-body">
               <h2 className="font-bold mb-3">Quick Links</h2>
