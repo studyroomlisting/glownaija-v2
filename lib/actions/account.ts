@@ -3,9 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { redirect }       from 'next/navigation'
 import { createClient }   from '@/lib/supabase/server'
-import { isValidPhone }   from '@/lib/utils'
+import { isValidPhone, isValidName } from '@/lib/utils'
 
-export async function updateProfile(formData: FormData): Promise<void> {
+export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
@@ -16,10 +16,11 @@ export async function updateProfile(formData: FormData): Promise<void> {
   const city       = (formData.get('city')       as string || '').trim()
   const hair_type  = (formData.get('hair_type')  as string || '').trim()
 
-  if (!first_name || first_name.length < 1) redirect('/account?tab=profile&msg=err_name')
-  if (!last_name  || last_name.length  < 1) redirect('/account?tab=profile&msg=err_name')
+  if (!isValidName(first_name)) return { error: 'First name should only contain letters.' }
+  if (!isValidName(last_name))  return { error: 'Last name should only contain letters.' }
+  if (phone && !isValidPhone(phone)) return { error: 'Please enter a valid phone number.' }
 
-  await supabase.from('profiles').update({
+  const { error } = await supabase.from('profiles').update({
     first_name,
     last_name,
     phone:     phone     || null,
@@ -27,5 +28,8 @@ export async function updateProfile(formData: FormData): Promise<void> {
     hair_type: hair_type || null,
   }).eq('id', user.id)
 
-  redirect('/account?tab=profile&msg=profile_saved')
+  if (error) return { error: `Could not save profile: ${error.message}` }
+
+  revalidatePath('/account')
+  return { success: true }
 }

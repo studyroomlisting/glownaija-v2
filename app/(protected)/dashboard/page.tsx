@@ -11,6 +11,7 @@ import ActionButton       from '@/components/dashboard/ActionButton'
 import DashboardSidebar   from '@/components/layout/DashboardSidebar'
 import { addService, updateProfile, updateHours, updateEnquiryStatus, deleteService } from '@/lib/actions/dashboard'
 import { updateBookingStatus } from '@/lib/actions/bookings'
+import { expireStaleBookings } from '@/lib/bookings-expiry'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +31,8 @@ export default async function DashboardPage({
   if (!mySalons?.length) redirect('/business')
 
   const salon = mySalons.find(s => s.id === searchParams.salon) || mySalons[0]
+
+  await expireStaleBookings(supabase)
 
   const { data: ownerProfile } = await supabase.from('profiles').select('first_name,last_name,avatar_url').eq('id', user.id).single()
 
@@ -451,7 +454,7 @@ export default async function DashboardPage({
                   </div>
                   <div>
                     <label className="label">Postcode</label>
-                    <input name="postcode" className="input" placeholder="SE15 5DT" defaultValue={salon.postcode || ''}/>
+                    <input name="postcode" className="input" placeholder="SE15 5DT" style={{textTransform:'uppercase'}} pattern="[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][A-Za-z]{2}" title="Enter a valid UK postcode" defaultValue={salon.postcode || ''}/>
                   </div>
                 </div>
                 <div>
@@ -465,7 +468,7 @@ export default async function DashboardPage({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="label">Phone</label>
-                    <input name="phone" type="tel" className="input" defaultValue={salon.phone || ''} placeholder="+44 7700 900000"/>
+                    <input name="phone" type="tel" className="input" defaultValue={salon.phone || ''} placeholder="+44 7700 900000" pattern="[0-9+\s()\-]{7,20}" title="Digits, spaces, +, -, () only"/>
                   </div>
                   <div>
                     <label className="label">Contact Email</label>

@@ -24,8 +24,21 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function SalonPage({ params }: { params: { slug: string } }) {
   const supabase = await createClient()
 
-  const { data: salon } = await supabase.from('salons').select('*').eq('slug', params.slug).eq('is_active', true).single()
+  const { data: salon } = await supabase.from('salons').select('*').eq('slug', params.slug).single()
   if (!salon) notFound()
+
+  const { data: { user: viewer } } = await supabase.auth.getUser()
+  if (salon.listing_status !== 'approved' || !salon.is_active) {
+    let allowed = false
+    if (viewer) {
+      if (viewer.id === salon.owner_id) allowed = true
+      else {
+        const { data: viewerProfile } = await supabase.from('profiles').select('is_admin').eq('id', viewer.id).single()
+        if (viewerProfile?.is_admin) allowed = true
+      }
+    }
+    if (!allowed) notFound()
+  }
 
   const [
     { data: services },
@@ -60,6 +73,11 @@ export default async function SalonPage({ params }: { params: { slug: string } }
 
   return (
     <div>
+      {(salon.listing_status !== 'approved' || !salon.is_active) && (
+        <div className="bg-gold/10 border-b border-gold/30 py-2.5 text-center text-xs font-bold text-gold">
+          ⏳ This listing is pending admin approval and is not visible to the public yet.
+        </div>
+      )}
       <Breadcrumb crumbs={[
         { label: 'Home',   href: '/' },
         { label: 'Salons', href: '/salons' },
@@ -67,42 +85,49 @@ export default async function SalonPage({ params }: { params: { slug: string } }
         { label: salon.name },
       ]}/>
 
-      {/* Hero banner */}
-      <div className="bg-gradient-to-r from-ink to-purple-900 py-6">
-        <div className="container flex items-start gap-4 flex-wrap">
-          <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl flex-shrink-0">
-            {salon.images?.[0]
-              ? <img src={salon.images[0]} alt="" className="w-full h-full object-cover rounded-2xl"/>
-              : salon.emoji}
+      {/* Image banner */}
+      <div className="container pt-5">
+        <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-ink to-purple-900">
+          {salon.images?.[0] ? (
+            <img src={salon.images[0]} alt={salon.name} className="w-full h-full object-cover"/>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-7xl">{salon.emoji}</div>
+          )}
+          <span className="absolute top-3 right-3 badge-pill bg-white/95 text-ink text-xs font-bold">★ {salon.rating || '—'} ({salon.review_count} reviews)</span>
+        </div>
+      </div>
+
+      {/* Info section */}
+      <div className="container py-5 border-b border-bdr">
+        <div className="flex items-start gap-4 flex-wrap">
+          <div className="w-16 h-16 rounded-2xl bg-page-2 flex items-center justify-center text-3xl flex-shrink-0 -mt-10 border-4 border-white shadow-md relative z-10">
+            {salon.emoji}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-white text-2xl md:text-3xl font-black">{salon.name}</h1>
-              <span className="badge-pill bg-white/15 text-white text-xs flex-shrink-0">★ {salon.rating || '—'} ({salon.review_count} reviews)</span>
-            </div>
-            <p className="text-white/60 text-sm mt-1">📍 {salon.area}, {salon.city}{salon.postcode ? `, ${salon.postcode}` : ''}</p>
+            <h1 className="text-2xl md:text-3xl font-black">{salon.name}</h1>
+            <p className="text-ink-3 text-sm mt-1">📍 {salon.area}, {salon.city}{salon.postcode ? `, ${salon.postcode}` : ''}</p>
             <div className="flex gap-2 mt-3 flex-wrap">
-              {salon.is_verified && <span className="badge-pill bg-gn/90 text-white text-xs">✓ Verified</span>}
-              <span className={`badge-pill text-white text-xs ${salon.is_open ? 'bg-gn/90' : 'bg-white/15'}`}>{salon.is_open ? '● Open Now' : '● Closed'}</span>
-              {salon.accepts_online_bookings && <span className="badge-pill bg-white/15 text-white text-xs">📅 Online Booking</span>}
+              {salon.is_verified && <span className="badge-pill bg-green-100 text-gn text-xs">✓ Verified</span>}
+              <span className={`badge-pill text-xs ${salon.is_open ? 'bg-green-100 text-gn' : 'bg-page-2 text-ink-3'}`}>{salon.is_open ? '● Open Now' : '● Closed'}</span>
+              {salon.accepts_online_bookings && <span className="badge-pill bg-page-2 text-ink-3 text-xs">📅 Online Booking</span>}
             </div>
           </div>
         </div>
 
         {/* Contact actions */}
-        <div className="container flex gap-2 flex-wrap mt-4">
-          {salon.phone && <a href={`tel:${salon.phone}`} className="btn btn-sm bg-white/10 text-white hover:bg-white/20 text-xs">📞 Call</a>}
-          <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn btn-sm bg-white/10 text-white hover:bg-white/20 text-xs">🧭 Directions</a>
-          {salon.website && <a href={salon.website} target="_blank" rel="noreferrer" className="btn btn-sm bg-white/10 text-white hover:bg-white/20 text-xs">🌐 Website</a>}
-          <SaveButton salonId={salon.id} initialSaved={isSaved} className="btn btn-sm bg-white/10 text-white hover:bg-white/20 text-xs"/>
+        <div className="flex gap-2 flex-wrap mt-4">
+          {salon.phone && <a href={`tel:${salon.phone}`} className="btn btn-outline btn-sm text-xs">📞 Call</a>}
+          <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm text-xs">🧭 Directions</a>
+          {salon.website && <a href={salon.website} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm text-xs">🌐 Website</a>}
+          <SaveButton salonId={salon.id} initialSaved={isSaved} className="btn btn-outline btn-sm text-xs"/>
           <a href={`mailto:?subject=${encodeURIComponent(salon.name)}&body=${encodeURIComponent(`Check out ${salon.name} on GlowNaija`)}`}
-            className="btn btn-sm bg-white/10 text-white hover:bg-white/20 text-xs">🔗 Share</a>
+            className="btn btn-outline btn-sm text-xs">🔗 Share</a>
         </div>
 
         {/* Section nav */}
-        <div className="container flex gap-1 flex-wrap mt-4 border-t border-white/10 pt-3">
+        <div className="flex gap-1 flex-wrap mt-4 pt-3 border-t border-bdr">
           {[['about','About'],['pricing','Pricing'],['gallery','Gallery'],['reviews','Reviews'],['location','Location']].map(([id,label]) => (
-            <a key={id} href={`#${id}`} className="px-3 py-1.5 text-xs font-bold text-white/60 hover:text-white transition-colors">{label}</a>
+            <a key={id} href={`#${id}`} className="px-3 py-1.5 text-xs font-bold text-ink-3 hover:text-rose transition-colors">{label}</a>
           ))}
         </div>
       </div>
@@ -198,7 +223,7 @@ export default async function SalonPage({ params }: { params: { slug: string } }
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="label">Your Name *</label>
-                    <input name="enq_name" className="input" required/>
+                    <input name="enq_name" className="input" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required/>
                   </div>
                   <div>
                     <label className="label">Email *</label>
@@ -207,7 +232,7 @@ export default async function SalonPage({ params }: { params: { slug: string } }
                 </div>
                 <div>
                   <label className="label">Phone</label>
-                  <input name="enq_phone" type="tel" className="input" placeholder="+44 7700 900000"/>
+                  <input name="enq_phone" type="tel" className="input" placeholder="+44 7700 900000" pattern="[0-9+\s()\-]{7,20}" title="Digits, spaces, +, -, () only"/>
                 </div>
                 <div>
                   <label className="label">Subject</label>

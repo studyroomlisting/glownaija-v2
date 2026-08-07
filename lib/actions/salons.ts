@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect }       from 'next/navigation'
 import { createClient }   from '@/lib/supabase/server'
-import { slugify, generateRef } from '@/lib/utils'
+import { slugify, generateRef, isValidEmail, isValidPhone, isValidUKPostcode, isValidName } from '@/lib/utils'
 
 export async function createSalon(formData: FormData) {
   const supabase = await createClient()
@@ -28,6 +28,11 @@ export async function createSalon(formData: FormData) {
   if (!name || name.length < 2) return { error: 'Business name is required.' }
   if (!city) return { error: 'City is required.' }
   if (!area) return { error: 'Area is required.' }
+  if (!isValidEmail(email)) return { error: 'Please enter a valid contact email.' }
+  if (phone && !isValidPhone(phone)) return { error: 'Please enter a valid phone number.' }
+  if (postcode && !isValidUKPostcode(postcode)) return { error: 'Please enter a valid UK postcode.' }
+  if (website && !/^https?:\/\/.+\..+/.test(website)) return { error: 'Website must be a full URL, e.g. https://yoursalon.co.uk' }
+  if (instagram && !/^[a-zA-Z0-9._]{1,60}$/.test(instagram)) return { error: 'Instagram handle looks invalid.' }
 
   // Check duplicate
   const { data: existing } = await supabase
@@ -69,8 +74,8 @@ export async function createSalon(formData: FormData) {
     area, city, postcode: postcode || null,
     phone: phone || null, email: email || null,
     instagram: instagram || null, website: website || null,
-    service_types, plan, listing_status: 'approved',
-    is_active: true, is_open: true,
+    service_types, plan, listing_status: 'pending',
+    is_active: false, is_open: true,
     years_active: years, accepts_online_bookings: onlineBk,
   }).select().single()
 
@@ -164,17 +169,20 @@ export async function submitEnquiry(formData: FormData) {
   const salon_id = formData.get('salon_id') as string
   const name     = (formData.get('enq_name')    as string).trim()
   const email    = (formData.get('enq_email')   as string).trim().toLowerCase()
+  const phone    = (formData.get('enq_phone')   as string || '').trim()
+  const subject  = (formData.get('enq_subject') as string || 'General Enquiry').trim()
   const message  = (formData.get('enq_message') as string).trim()
 
-  if (name.length < 2)   return { error: 'Name is required.' }
-  if (!email.includes('@')) return { error: 'Valid email is required.' }
-  if (message.length < 10)  return { error: 'Message must be at least 10 characters.' }
+  if (!isValidName(name))    return { error: 'Please enter your full name (letters only).' }
+  if (!isValidEmail(email))  return { error: 'Please enter a valid email address.' }
+  if (phone && !isValidPhone(phone)) return { error: 'Please enter a valid phone number.' }
+  if (message.length < 10)   return { error: 'Message must be at least 10 characters.' }
 
   const { error } = await supabase.from('enquiries').insert({
     salon_id, sender_id: user?.id || null,
     name, email,
-    phone: (formData.get('enq_phone') as string) || null,
-    subject: (formData.get('enq_subject') as string) || 'General Enquiry',
+    phone: phone || null,
+    subject,
     message,
   })
 
@@ -197,9 +205,9 @@ export async function submitEnquiry(formData: FormData) {
       const ownerEmail = ownerUser.data.user?.email || salon.email
       if (ownerEmail) {
         await sendEnquiryNotification({
-          ownerEmail, salonName: salon.name, senderName: enq_name,
-          senderEmail: enq_email, senderPhone: formData.get('enq_phone') as string || undefined,
-          subject: formData.get('enq_subject') as string || undefined, message: enq_msg,
+          ownerEmail, salonName: salon.name, senderName: name,
+          senderEmail: email, senderPhone: phone || undefined,
+          subject, message,
         })
       }
     } catch {}

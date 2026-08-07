@@ -13,6 +13,20 @@ async function requireAdmin() {
   return { user, supabase: await createAdminClient() }
 }
 
+export async function deleteSalon(salonId: string) {
+  const { supabase, user } = await requireAdmin()
+  try {
+    const { data: salon } = await supabase.from('salons').select('name').eq('id', salonId).single()
+    const { error } = await supabase.from('salons').delete().eq('id', salonId)
+    if (error) return { error: error.message }
+    await supabase.from('audit_logs').insert({ user_id: user.id, action: `salon_deleted:${salon?.name || salonId}`, entity_type: 'salon', entity_id: salonId })
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (err: any) {
+    return { error: err?.message || 'Could not delete salon.' }
+  }
+}
+
 export async function updateSalonStatus(salonId: string, status: string) {
   const { supabase, user } = await requireAdmin()
   try {

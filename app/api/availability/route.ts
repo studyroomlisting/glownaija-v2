@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const date    = searchParams.get('date')      || ''
   const today   = new Date().toISOString().split('T')[0]
 
-  if (!salonId || !date || date <= today)
+  if (!salonId || !date || date < today)
     return NextResponse.json({ error: 'Invalid params' }, { status: 400 })
 
   const supabase = await createClient()

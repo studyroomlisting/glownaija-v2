@@ -24,7 +24,7 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
 
-  const today = new Date(); today.setDate(today.getDate() + 1)
+  const today = new Date()
   const minDate = today.toISOString().split('T')[0]
 
   useEffect(() => {

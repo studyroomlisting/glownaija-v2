@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/hooks/useCart'
-import { fmtPrice, isValidUKPostcode } from '@/lib/utils'
+import { fmtPrice, isValidUKPostcode, isValidName } from '@/lib/utils'
 
 const DELIVERY = 299
 const FREE_DELIVERY_THRESHOLD = 5000
@@ -37,8 +37,10 @@ export default function CheckoutPage() {
     if (!items.length) { setError('Your cart is empty.'); setLoading(false); return }
 
     const fd       = new FormData(e.currentTarget)
+    const fullName = (fd.get('full_name') as string).trim()
     const postcode = (fd.get('postcode') as string).trim().toUpperCase()
 
+    if (!isValidName(fullName)) { setError('Please enter your full name (letters only).'); setLoading(false); return }
     if (!isValidUKPostcode(postcode)) { setError('Please enter a valid UK postcode (e.g. SE15 5DT).'); setLoading(false); return }
 
     const res  = await fetch('/api/checkout', {
@@ -46,7 +48,7 @@ export default function CheckoutPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         items,
-        full_name:     fd.get('full_name'),
+        full_name:     fullName,
         address:       fd.get('address'),
         city:          fd.get('city'),
         postcode,
@@ -94,7 +96,7 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 <div>
                   <label className="label">Full Name *</label>
-                  <input name="full_name" className="input" placeholder="Amara Okafor" required/>
+                  <input name="full_name" className="input" placeholder="Amara Okafor" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required/>
                 </div>
                 <div>
                   <label className="label">Street Address *</label>

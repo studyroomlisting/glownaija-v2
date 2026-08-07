@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
-import { fmtPrice } from '@/lib/utils'
+import { fmtPrice, isValidUKPostcode, isValidName } from '@/lib/utils'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' })
 
@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
   const { items, full_name, address, city, postcode, delivery_cost = 299, coupon_id } = body
 
   if (!items?.length) return NextResponse.json({ error: 'Empty cart' }, { status: 400 })
+  if (!isValidName((full_name || '').trim())) return NextResponse.json({ error: 'Please enter a valid full name.' }, { status: 400 })
+  if (!address || !String(address).trim())     return NextResponse.json({ error: 'Address is required.' }, { status: 400 })
+  if (!city || !String(city).trim())            return NextResponse.json({ error: 'City is required.' }, { status: 400 })
+  if (!isValidUKPostcode((postcode || '').trim())) return NextResponse.json({ error: 'Please enter a valid UK postcode.' }, { status: 400 })
 
   const line_items = items.map((item: any) => ({
     price_data: {

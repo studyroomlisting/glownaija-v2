@@ -5,9 +5,11 @@ import Link from 'next/link'
 import { fmtPrice } from '@/lib/utils'
 import { cancelBooking } from '@/lib/actions/bookings'
 import ActionButton from '@/components/dashboard/ActionButton'
+import { expireStaleBookings } from '@/lib/bookings-expiry'
 
 export default async function BookingConfirmationPage({ searchParams }: { searchParams: { ref?: string } }) {
   const supabase = await createClient()
+  await expireStaleBookings(supabase)
   const { data: booking } = searchParams.ref
     ? await supabase.from('bookings')
         .select('*,salons(name,emoji,slug,images,area,city,rating),services(name,duration_minutes)')
@@ -30,6 +32,10 @@ export default async function BookingConfirmationPage({ searchParams }: { search
   const unpaid  = !booking.deposit_paid && booking.status !== 'cancelled'
   const cancellable = ['pending', 'confirmed'].includes(booking.status)
 
+  const minutesLeft = booking.status === 'pending' && unpaid
+    ? Math.max(0, 15 - Math.floor((Date.now() - new Date(booking.created_at).getTime()) / 60000))
+    : null
+
   const statusMeta = {
     pending:   { icon: '⏳', title: 'Booking Request Received', color: 'bg-gold/10 text-gold' },
     confirmed: { icon: '✅', title: 'Booking Confirmed!',       color: 'bg-green-100 text-gn' },
@@ -49,11 +55,19 @@ export default async function BookingConfirmationPage({ searchParams }: { search
           {statusMeta.icon}
         </div>
         <h1 className="text-2xl md:text-3xl font-black mb-2">{statusMeta.title}</h1>
-        {unpaid && (
+        {unpaid && minutesLeft !== null && (
           <p className="text-ink-3 text-sm max-w-md mx-auto">Your slot is being held temporarily. Complete your deposit payment to confirm your booking.</p>
+        )}
+        {unpaid && minutesLeft !== null && (
+          <p className={`text-xs font-bold mt-2 ${minutesLeft <= 5 ? 'text-rose' : 'text-gold'}`}>
+            ⏱ Pay within {minutesLeft} minute{minutesLeft !== 1 ? 's' : ''} or this booking will be automatically released.
+          </p>
         )}
         {booking.status === 'confirmed' && (
           <p className="text-ink-3 text-sm">Your appointment at <strong>{salon?.name}</strong> is booked.</p>
+        )}
+        {booking.status === 'cancelled' && !booking.deposit_paid && (
+          <p className="text-ink-3 text-sm max-w-md mx-auto">This booking was automatically released because payment wasn't completed in time. You're welcome to book again.</p>
         )}
 
         <div className="flex justify-center gap-6 flex-wrap mt-4 text-sm">

@@ -15,6 +15,9 @@ export default function SlotPicker({ salonId, date, onSelect, selected }: SlotPi
   const [closed, setClosed] = useState(false)
   const [loading,setLoading]= useState(false)
 
+  const isToday = date === new Date().toISOString().split('T')[0]
+  const nowHHMM = new Date().toTimeString().substring(0, 5)
+
   useEffect(() => {
     if (!salonId || !date) return
     setLoading(true)
@@ -30,19 +33,23 @@ export default function SlotPicker({ salonId, date, onSelect, selected }: SlotPi
 
   if (loading) return <div className="text-center py-6 text-ink-3 text-sm">Loading availability…</div>
   if (closed)  return <div className="text-center py-6 text-ink-3 bg-page-2 rounded-xl"><p className="text-2xl mb-2">🚫</p><p className="font-semibold">Closed on this day</p></div>
-  if (!slots.length) return <div className="text-center py-6 text-ink-3 bg-page-2 rounded-xl"><p>No availability on this date</p></div>
+  const futureSlots = isToday ? slots.filter(s => s > nowHHMM) : slots
+  if (!slots.length || (isToday && !futureSlots.length)) return <div className="text-center py-6 text-ink-3 bg-page-2 rounded-xl"><p>No availability on this date</p></div>
 
   return (
     <div>
       <p className="text-xs font-bold uppercase tracking-wide text-ink-3 mb-2">Available Slots</p>
       <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 lg:grid-cols-6">
         {slots.map(slot => {
+          const isPast = isToday && slot <= nowHHMM
           const isTaken = taken.includes(slot)
+          const isDisabled = isTaken || isPast
           const isSelected = selected === slot
           return (
-            <button key={slot} disabled={isTaken} onClick={() => onSelect(slot)}
+            <button key={slot} disabled={isDisabled} onClick={() => onSelect(slot)}
+              title={isPast ? 'This time has already passed' : isTaken ? 'Already booked' : undefined}
               className={cn('py-2 text-xs font-bold rounded-lg border-2 transition-all',
-                isTaken    ? 'border-bdr text-ink-3/40 bg-page-2 cursor-not-allowed line-through' :
+                isDisabled  ? 'border-bdr text-ink-3/40 bg-page-2 cursor-not-allowed line-through' :
                 isSelected ? 'border-rose bg-rose text-white' :
                              'border-bdr hover:border-rose hover:text-rose')}>
               {slot}

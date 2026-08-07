@@ -76,8 +76,8 @@ export default function SignUpPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input type="hidden" name="role" value={role} />
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">First Name *</label><input name="first_name" type="text" className="input" placeholder="Amara" required /></div>
-            <div><label className="label">Last Name *</label><input name="last_name" type="text" className="input" placeholder="Okafor" required /></div>
+            <div><label className="label">First Name *</label><input name="first_name" type="text" className="input" placeholder="Amara" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required /></div>
+            <div><label className="label">Last Name *</label><input name="last_name" type="text" className="input" placeholder="Okafor" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required /></div>
           </div>
           <div><label className="label">Email Address *</label><input name="email" type="email" className="input" placeholder="you@example.com" required /></div>
           <div>

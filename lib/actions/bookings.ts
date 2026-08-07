@@ -17,7 +17,13 @@ export async function createBooking(formData: FormData) {
   const notes       = (formData.get('notes') as string || '').trim()
 
   if (!salon_id || !date || !time_slot) return { error: 'Missing required fields.' }
-  if (date <= new Date().toISOString().split('T')[0]) return { error: 'Date must be in the future.' }
+  if (date < new Date().toISOString().split('T')[0]) return { error: 'Date must be today or later.' }
+
+  const nowStr = new Date().toISOString().split('T')[0]
+  if (date === nowStr) {
+    const nowTime = new Date().toTimeString().substring(0, 5)
+    if (time_slot <= nowTime) return { error: 'That time has already passed. Please choose a later slot.' }
+  }
 
   // Check slot not already taken (race condition protection)
   const { data: taken } = await supabase.from('bookings')

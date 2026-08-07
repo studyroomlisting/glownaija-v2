@@ -6,6 +6,8 @@ import { fmtPrice }       from '@/lib/utils'
 import { cancelBooking }  from '@/lib/actions/bookings'
 import { updateProfile }  from '@/lib/actions/account'
 import DashboardSidebar   from '@/components/layout/DashboardSidebar'
+import ActionForm         from '@/components/dashboard/ActionForm'
+import { expireStaleBookings } from '@/lib/bookings-expiry'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +21,8 @@ export default async function AccountPage({
   if (!user) redirect('/auth/signin?next=/account')
 
   const tab = searchParams.tab || 'overview'
+
+  await expireStaleBookings(supabase)
 
   // ── Fetch all data in parallel ────────────────────────────────────────────
   const [
@@ -456,20 +460,20 @@ export default async function AccountPage({
           {/* Edit profile form */}
           <div className="card card-body">
             <h2 className="font-bold text-lg mb-5">Edit Profile</h2>
-            <form action={updateProfile} className="space-y-4">
+            <ActionForm action={updateProfile} successMessage="Profile saved!" submitLabel="Save Profile →" className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">First Name *</label>
-                  <input name="first_name" className="input" defaultValue={profile?.first_name || ''} required maxLength={50}/>
+                  <input name="first_name" className="input" defaultValue={profile?.first_name || ''} required maxLength={50} pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only"/>
                 </div>
                 <div>
                   <label className="label">Last Name *</label>
-                  <input name="last_name" className="input" defaultValue={profile?.last_name || ''} required maxLength={50}/>
+                  <input name="last_name" className="input" defaultValue={profile?.last_name || ''} required maxLength={50} pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only"/>
                 </div>
               </div>
               <div>
                 <label className="label">Phone</label>
-                <input name="phone" type="tel" className="input" placeholder="+44 7700 900000" defaultValue={profile?.phone || ''}/>
+                <input name="phone" type="tel" className="input" placeholder="+44 7700 900000" defaultValue={profile?.phone || ''} pattern="[0-9+\s()\-]{7,20}" title="Digits, spaces, +, -, () only"/>
               </div>
               <div>
                 <label className="label">City</label>
@@ -489,10 +493,7 @@ export default async function AccountPage({
                   ))}
                 </select>
               </div>
-              <button type="submit" className="btn btn-primary w-full justify-center">
-                Save Profile →
-              </button>
-            </form>
+            </ActionForm>
           </div>
 
           {/* Account info + security */}

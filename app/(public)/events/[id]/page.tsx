@@ -30,8 +30,8 @@ export default async function EventPage({ params }: { params: { id: string } }) 
           <h2 className="font-bold text-lg mb-4">Register for this event</h2>
           <form action={registerForEvent} className="space-y-4">
             <input type="hidden" name="event_id" value={e.id}/>
-            <div className="grid grid-cols-2 gap-3"><div><label className="label">Name *</label><input name="name" className="input" defaultValue={user?'':''} required/></div><div><label className="label">Email *</label><input name="email" type="email" className="input" required/></div></div>
-            <div className="grid grid-cols-2 gap-3"><div><label className="label">Phone</label><input name="phone" type="tel" className="input"/></div><div><label className="label">Tickets</label><select name="tickets" className="input">{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}</select></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><label className="label">Name *</label><input name="name" className="input" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required/></div><div><label className="label">Email *</label><input name="email" type="email" className="input" required/></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><label className="label">Phone</label><input name="phone" type="tel" className="input" pattern="[0-9+\s()\-]{7,20}" title="Digits, spaces, +, -, () only"/></div><div><label className="label">Tickets</label><select name="tickets" className="input">{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}</select></div></div>
             <button type="submit" className="btn btn-primary w-full justify-center">{e.is_free?'Register Free →':`Register — ${fmtPrice(e.price)} →`}</button>
           </form>
         </div>

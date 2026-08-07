@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect }       from 'next/navigation'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { isValidEmail, isValidName, isValidPhone } from '@/lib/utils'
 
 export async function createEvent(formData: FormData) {
   const supabase = await createClient()
@@ -98,8 +99,9 @@ export async function registerForEvent(formData: FormData) {
   const tickets  = parseInt(formData.get('tickets') as string || '1')
 
   // Validation
-  if (!name || name.length < 2)       return { error: 'Please enter your full name.' }
-  if (!email.includes('@'))           return { error: 'Please enter a valid email address.' }
+  if (!isValidName(name))            return { error: 'Please enter your full name (letters only).' }
+  if (!isValidEmail(email))          return { error: 'Please enter a valid email address.' }
+  if (phone && !isValidPhone(phone)) return { error: 'Please enter a valid phone number.' }
   if (tickets < 1 || tickets > 10)   return { error: 'You can register 1–10 tickets.' }
 
   // Check already registered

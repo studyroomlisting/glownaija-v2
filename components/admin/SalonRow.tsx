@@ -1,10 +1,11 @@
 'use client'
 import Link from 'next/link'
-import { toggleFeatured, toggleVerified, updateSalonStatus } from '@/lib/actions/admin'
+import { toggleFeatured, toggleVerified, updateSalonStatus, deleteSalon } from '@/lib/actions/admin'
 import ActionButton from '@/components/dashboard/ActionButton'
 import type { Salon } from '@/types/database'
 
 export default function SalonRow({ salon }: { salon: Salon & { booking_count?: number } }) {
+  const isPending = salon.listing_status === 'pending'
   return (
     <div className="card card-body flex justify-between items-center flex-wrap gap-3">
       <div className="flex-1 min-w-0">
@@ -13,7 +14,7 @@ export default function SalonRow({ salon }: { salon: Salon & { booking_count?: n
           {salon.is_featured && <span className="badge-pill bg-gold text-white text-2xs">★ Featured</span>}
           {salon.is_verified && <span className="badge-pill bg-gn text-white text-2xs">✓ Verified</span>}
           <span className="badge-pill bg-page-2 text-ink-3 text-2xs">{salon.plan}</span>
-          <span className={`badge-pill text-2xs ${salon.listing_status === 'approved' ? 'bg-green-100 text-gn' : 'bg-rose-100 text-rose'}`}>{salon.listing_status}</span>
+          <span className={`badge-pill text-2xs ${salon.listing_status === 'approved' ? 'bg-green-100 text-gn' : isPending ? 'bg-gold/20 text-gold' : 'bg-rose-100 text-rose'}`}>{salon.listing_status}</span>
         </div>
         <p className="text-xs text-ink-3">📍 {salon.area}, {salon.city} {salon.postcode || ''} · ★{salon.rating} · {salon.review_count} reviews · {salon.booking_count || 0} bookings</p>
         {salon.email && <p className="text-xs text-ink-3">📧 {salon.email}</p>}
@@ -31,7 +32,14 @@ export default function SalonRow({ salon }: { salon: Salon & { booking_count?: n
           className={`btn btn-sm text-xs ${salon.listing_status === 'approved' ? 'btn-outline text-rose border-rose' : 'btn-green'}`}
           confirmMessage={salon.listing_status === 'approved' ? `Suspend "${salon.name}"? It will be hidden from the site.` : undefined}
         >
-          {salon.listing_status === 'approved' ? 'Suspend' : 'Restore'}
+          {salon.listing_status === 'approved' ? 'Suspend' : isPending ? '✓ Approve' : 'Restore'}
+        </ActionButton>
+        <ActionButton
+          action={deleteSalon.bind(null, salon.id)}
+          className="btn btn-sm btn-outline text-xs text-rose border-rose"
+          confirmMessage={`Permanently delete "${salon.name}"? This cannot be undone — all its services, bookings, and reviews will be removed too.`}
+        >
+          🗑 Delete
         </ActionButton>
       </div>
     </div>

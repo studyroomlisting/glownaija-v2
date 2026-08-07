@@ -10,8 +10,9 @@ import OrderRow  from '@/components/admin/OrderRow'
 import AuditRow  from '@/components/admin/AuditRow'
 import StatsCard from '@/components/dashboard/StatsCard'
 import DashboardSidebar from '@/components/layout/DashboardSidebar'
+import { expireStaleBookings } from '@/lib/bookings-expiry'
 
-export default async function AdminPage({ searchParams }: { searchParams: { tab?: string } }) {
+export default async function AdminPage({ searchParams }: { searchParams: { tab?: string; status?: string } }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
@@ -21,19 +22,25 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
 
   const tab = searchParams.tab || 'overview'
 
+  await expireStaleBookings(supabase)
+
   const [
     { count: salons_count },
     { count: users_count },
     { count: bookings_count },
     { count: orders_count },
+    { count: pending_count },
   ] = await Promise.all([
     supabase.from('salons').select('*', { count: 'exact', head: true }).eq('is_active', true),
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('bookings').select('*', { count: 'exact', head: true }).gte('booking_date', new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]),
     supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString()),
+    supabase.from('salons').select('*', { count: 'exact', head: true }).eq('listing_status', 'pending'),
   ])
 
-  const { data: salons }   = await supabase.from('salons').select('*').order('created_at', { ascending: false }).limit(30)
+  let salonsQuery = supabase.from('salons').select('*').order('created_at', { ascending: false }).limit(30)
+  if (searchParams.status) salonsQuery = salonsQuery.eq('listing_status', searchParams.status)
+  const { data: salons }   = await salonsQuery
   const { data: users }    = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(30)
   const { data: bookings } = await supabase.from('bookings').select('*,salons(name),profiles(first_name,last_name,email)').order('created_at', { ascending: false }).limit(30)
   const { data: orders }   = await supabase.from('orders').select('*,profiles(first_name,last_name,email)').order('created_at', { ascending: false }).limit(30)
@@ -55,7 +62,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
 
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: '📊' },
-    { id: 'salons',   label: 'Salons',   icon: '🏪', badge: salons_count || undefined },
+    { id: 'salons',   label: 'Salons',   icon: '🏪', badge: pending_count || undefined },
     { id: 'users',    label: 'Users',    icon: '👥', badge: users_count || undefined },
     { id: 'bookings', label: 'Bookings', icon: '📅' },
     { id: 'orders',   label: 'Orders',   icon: '🛍️' },
@@ -111,8 +118,16 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
 
         {tab === 'salons' && (
           <div className="space-y-3">
+            <div className="flex gap-2 flex-wrap mb-2">
+              {[['', 'All'], ['pending', `⏳ Pending${pending_count ? ` (${pending_count})` : ''}`], ['approved', '✓ Approved'], ['suspended', 'Suspended']].map(([val, label]) => (
+                <Link key={val} href={`/admin?tab=salons${val ? `&status=${val}` : ''}`}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${(searchParams.status || '') === val ? 'bg-ink text-white' : 'bg-page-2 text-ink-3 hover:bg-page'}`}>
+                  {label}
+                </Link>
+              ))}
+            </div>
             {!salons?.length
-              ? <div className="text-center py-12 text-ink-3">No salons yet</div>
+              ? <div className="text-center py-12 text-ink-3">No salons found</div>
               : salons.map(s => <SalonRow key={s.id} salon={s} />)}
           </div>
         )}

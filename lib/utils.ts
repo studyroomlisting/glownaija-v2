@@ -48,6 +48,10 @@ export function isValidPhone(phone: string): boolean {
   return /^[0-9+\s()\-]{7,20}$/.test(phone)
 }
 
+export function isValidName(name: string): boolean {
+  return /^[A-Za-z][A-Za-z\s'.-]{1,59}$/.test(name.trim())
+}
+
 // Generate 30-minute slots between open and close time
 export function generateSlots(openTime: string, closeTime: string): string[] {
   const slots: string[] = []

@@ -3,7 +3,7 @@
 import { revalidatePath }  from 'next/cache'
 import { redirect }        from 'next/navigation'
 import { createClient }    from '@/lib/supabase/server'
-import { isValidEmail }    from '@/lib/utils'
+import { isValidEmail, isValidName } from '@/lib/utils'
 
 export async function signUp(formData: FormData) {
   const supabase    = await createClient()
@@ -14,6 +14,7 @@ export async function signUp(formData: FormData) {
   const account_type = formData.get('role') === 'owner' ? 'owner' : 'customer'
 
   if (!first_name || !last_name) return { error: 'Name is required.' }
+  if (!isValidName(first_name) || !isValidName(last_name)) return { error: 'Names should only contain letters.' }
   if (!isValidEmail(email))       return { error: 'Invalid email address.' }
   if (password.length < 8)        return { error: 'Password must be at least 8 characters.' }
 

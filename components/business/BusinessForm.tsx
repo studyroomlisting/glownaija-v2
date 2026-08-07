@@ -34,8 +34,8 @@ export default function BusinessForm({ bTypes, cities }: BusinessFormProps) {
         <div><label className="label">Area / Neighbourhood *</label><input name="area" className="input" placeholder="e.g. Peckham" required/></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="label">Postcode</label><input name="postcode" className="input" placeholder="SE15 5DT"/></div>
-        <div><label className="label">Phone</label><input name="phone" type="tel" className="input" placeholder="+44 7700 900000"/></div>
+        <div><label className="label">Postcode</label><input name="postcode" className="input" placeholder="SE15 5DT" style={{textTransform:'uppercase'}} pattern="[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][A-Za-z]{2}" title="Enter a valid UK postcode"/></div>
+        <div><label className="label">Phone</label><input name="phone" type="tel" className="input" placeholder="+44 7700 900000" pattern="[0-9+\s()\-]{7,20}" title="Digits, spaces, +, -, () only"/></div>
       </div>
       <div><label className="label">Contact Email *</label><input name="email" type="email" className="input" required/></div>
       <div className="grid grid-cols-2 gap-3">
