@@ -93,31 +93,47 @@ export default async function SalonPage({ params }: { params: { slug: string } }
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-7xl">{salon.emoji}</div>
         )}
-        <span className="absolute top-4 right-4 badge-pill bg-white/95 text-ink text-xs font-bold">★ {salon.rating || '—'} ({salon.review_count} reviews)</span>
+        {(salon.images?.length || 0) > 1 && (
+          <a href="#gallery" className="absolute top-4 left-4 badge-pill bg-white/90 text-ink text-xs font-bold flex items-center gap-1.5">
+            🎞 View all {salon.images.length} photos
+          </a>
+        )}
       </div>
 
-      {/* Info section */}
-      <div className="container py-5 border-b border-bdr">
-        <div className="flex items-start gap-4 flex-wrap">
-          <div className="w-16 h-16 rounded-2xl bg-page-2 flex items-center justify-center text-3xl flex-shrink-0 -mt-10 border-4 border-white shadow-md relative z-10">
-            {salon.emoji}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-black">{salon.name}</h1>
-            <p className="text-ink-3 text-sm mt-1">📍 {salon.area}, {salon.city}{salon.postcode ? `, ${salon.postcode}` : ''}</p>
-            <div className="flex gap-2 mt-3 flex-wrap">
-              {salon.is_verified && <span className="badge-pill bg-green-100 text-gn text-xs">✓ Verified</span>}
-              <span className={`badge-pill text-xs ${salon.is_open ? 'bg-green-100 text-gn' : 'bg-page-2 text-ink-3'}`}>{salon.is_open ? '● Open Now' : '● Closed'}</span>
-              {salon.accepts_online_bookings && <span className="badge-pill bg-page-2 text-ink-3 text-xs">📅 Online Booking</span>}
+      {/* Info card — floats up over the image */}
+      <div className="container relative z-10 -mt-16 mb-3">
+        <div className="card card-body shadow-xl">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-4 min-w-0">
+              <div className="w-16 h-16 rounded-2xl bg-page-2 flex items-center justify-center text-3xl flex-shrink-0 border-4 border-white shadow-md -mt-1">
+                {salon.emoji}
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-2xl md:text-3xl font-black">{salon.name}</h1>
+                <p className="text-ink-3 text-sm mt-1">📍 {salon.area}, {salon.city}{salon.postcode ? `, ${salon.postcode}` : ''}</p>
+              </div>
             </div>
+            <span className="badge-pill bg-gold/15 text-gold text-sm font-bold flex-shrink-0">★ {salon.rating || '—'} ({salon.review_count} reviews)</span>
+          </div>
+
+          <div className="flex gap-2 mt-4 flex-wrap items-center">
+            <span className={`badge-pill text-xs font-bold ${salon.is_open ? 'bg-green-100 text-gn' : 'bg-rose-100 text-rose'}`}>● {salon.is_open ? 'Open Now' : 'Closed Now'}</span>
+            {salon.is_verified && <span className="badge-pill bg-green-100 text-gn text-xs">✓ Verified</span>}
+            {(services?.length || 0) > 0 && <span className="text-xs text-ink-3 flex items-center gap-1">📋 {services.length} Service{services.length !== 1 ? 's' : ''}</span>}
+            {salon.accepts_online_bookings && <span className="text-xs text-ink-3 flex items-center gap-1">📅 Online Booking</span>}
+          </div>
+
+          <div className="flex gap-2 flex-wrap mt-4 pt-4 border-t border-bdr">
+            {salon.phone && <a href={`tel:${salon.phone}`} className="btn btn-outline btn-sm text-xs">📞 Call</a>}
+            <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm text-xs">🧭 Directions</a>
+            {salon.website && <a href={salon.website} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm text-xs">🌐 Website</a>}
           </div>
         </div>
+      </div>
 
-        {/* Contact actions */}
-        <div className="flex gap-2 flex-wrap mt-4">
-          {salon.phone && <a href={`tel:${salon.phone}`} className="btn btn-outline btn-sm text-xs">📞 Call</a>}
-          <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm text-xs">🧭 Directions</a>
-          {salon.website && <a href={salon.website} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm text-xs">🌐 Website</a>}
+      {/* Save / Share + section nav */}
+      <div className="container pb-5 border-b border-bdr">
+        <div className="flex gap-2 flex-wrap">
           <SaveButton salonId={salon.id} initialSaved={isSaved} className="btn btn-outline btn-sm text-xs"/>
           <a href={`mailto:?subject=${encodeURIComponent(salon.name)}&body=${encodeURIComponent(`Check out ${salon.name} on GlowNaija`)}`}
             className="btn btn-outline btn-sm text-xs">🔗 Share</a>
