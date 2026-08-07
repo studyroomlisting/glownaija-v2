@@ -150,11 +150,17 @@ export async function submitReview(formData: FormData) {
     .select('id').eq('reviewer_id', user.id).eq('salon_id', salon_id).single()
   if (exists) return { error: 'You have already reviewed this salon.' }
 
+  // "Verified" should mean what it implies to other customers: this reviewer
+  // actually completed a booking at this salon. Previously every review was
+  // marked verified regardless, which let anyone post a misleadingly-badged review.
+  const { data: completedBooking } = await supabase.from('bookings')
+    .select('id').eq('customer_id', user.id).eq('salon_id', salon_id).eq('status', 'completed').limit(1).single()
+
   const { error } = await supabase.from('reviews').insert({
     reviewer_id: user.id, salon_id, rating, review_text,
     service_booked: (formData.get('service_booked') as string) || null,
     hair_type: (formData.get('hair_type') as string) || null,
-    is_verified: true,
+    is_verified: !!completedBooking,
   })
 
   if (error) return { error: 'Could not submit review. Please try again.' }

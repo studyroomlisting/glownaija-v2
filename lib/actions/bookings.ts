@@ -25,7 +25,8 @@ export async function createBooking(formData: FormData) {
     if (time_slot <= nowTime) return { error: 'That time has already passed. Please choose a later slot.' }
   }
 
-  // Check slot not already taken (race condition protection)
+  // Fast-path check — good UX for the common case, but NOT the real protection
+  // (see the unique index added in migration 012 for why this alone isn't enough).
   const { data: taken } = await supabase.from('bookings')
     .select('id')
     .eq('salon_id', salon_id)
@@ -52,7 +53,14 @@ export async function createBooking(formData: FormData) {
     notes: notes || null,
   }).select().single()
 
-  if (error || !booking) return { error: 'Could not create booking. Please try again.' }
+  if (error) {
+    // Postgres 23505 = unique_violation. This is the database's slot-uniqueness
+    // constraint doing its job — a concurrent request won the race between our
+    // check above and this insert. Same friendly message as the fast-path check.
+    if (error.code === '23505') return { error: 'This slot was just taken. Please choose another time.' }
+    return { error: 'Could not create booking. Please try again.' }
+  }
+  if (!booking) return { error: 'Could not create booking. Please try again.' }
 
   // Notify salon owner
   const { data: salon } = await supabase.from('salons').select('owner_id,name').eq('id', salon_id).single()
