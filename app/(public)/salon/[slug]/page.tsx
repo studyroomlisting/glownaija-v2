@@ -7,6 +7,8 @@ import type { Metadata } from 'next'
 import Breadcrumb  from '@/components/layout/Breadcrumb'
 import ServiceRow  from '@/components/salon/ServiceRow'
 import ReviewCard  from '@/components/salon/ReviewCard'
+import SaveButton  from '@/components/salon/SaveButton'
+import { fmtPrice } from '@/lib/utils'
 import { submitEnquiry } from '@/lib/actions/salons'
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -30,11 +32,15 @@ export default async function SalonPage({ params }: { params: { slug: string } }
     { data: hours },
     { data: reviews },
     { data: { user } },
+    { data: owner },
+    { data: similar },
   ] = await Promise.all([
     supabase.from('services').select('*').eq('salon_id', salon.id).eq('is_active', true).order('sort_order'),
     supabase.from('salon_opening_hours').select('*').eq('salon_id', salon.id).order('day_of_week'),
     supabase.from('reviews').select('*, profiles(first_name,last_name)').eq('salon_id', salon.id).order('created_at', { ascending: false }).limit(15),
     supabase.auth.getUser(),
+    supabase.from('profiles').select('first_name,last_name,avatar_url,email').eq('id', salon.owner_id).single(),
+    supabase.from('salons').select('*').eq('city', salon.city).eq('listing_status','approved').eq('is_active', true).neq('id', salon.id).order('rating', { ascending: false }).limit(3),
   ])
 
   const isSaved = user
@@ -48,6 +54,9 @@ export default async function SalonPage({ params }: { params: { slug: string } }
     acc[s.category].push(s)
     return acc
   }, {})
+  const cheapest = services?.length ? Math.min(...services.map(s => s.price)) : salon.price_from * 100
+  const todayHours = hours?.find(h => h.day_of_week === today)
+  const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${salon.name} ${salon.address || ''} ${salon.area} ${salon.city}`)}`
 
   return (
     <div>
@@ -58,54 +67,103 @@ export default async function SalonPage({ params }: { params: { slug: string } }
         { label: salon.name },
       ]}/>
 
-      {/* Hero image */}
-      <div className="relative overflow-hidden" style={{ height: '18rem', background: 'linear-gradient(135deg, #1C1008, #3B1F6B)' }}>
-        {salon.images?.[0] && (
-          <img src={salon.images[0]} alt={salon.name} className="w-full h-full object-cover" style={{ opacity: 0.8 }}/>
-        )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}/>
-        <div className="absolute bottom-5 left-5 right-5">
-          <h1 className="text-white text-3xl font-black">{salon.name} {salon.emoji}</h1>
-          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>📍 {salon.area}, {salon.city}</p>
-          <div className="flex gap-2 mt-2 flex-wrap">
-            {salon.is_verified && (
-              <span className="badge-pill text-white text-xs" style={{ background: 'rgba(16,185,129,0.9)' }}>✓ Verified</span>
-            )}
-            {salon.is_open && (
-              <span className="badge-pill text-white text-xs" style={{ background: 'rgba(16,185,129,0.9)' }}>● Open Now</span>
-            )}
-            {salon.accepts_online_bookings && (
-              <span className="badge-pill text-white text-xs" style={{ background: 'rgba(255,255,255,0.2)' }}>📅 Online Booking</span>
-            )}
+      {/* Hero banner */}
+      <div className="bg-gradient-to-r from-ink to-purple-900 py-6">
+        <div className="container flex items-start gap-4 flex-wrap">
+          <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl flex-shrink-0">
+            {salon.images?.[0]
+              ? <img src={salon.images[0]} alt="" className="w-full h-full object-cover rounded-2xl"/>
+              : salon.emoji}
           </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-white text-2xl md:text-3xl font-black">{salon.name}</h1>
+              <span className="badge-pill bg-white/15 text-white text-xs flex-shrink-0">★ {salon.rating || '—'} ({salon.review_count} reviews)</span>
+            </div>
+            <p className="text-white/60 text-sm mt-1">📍 {salon.area}, {salon.city}{salon.postcode ? `, ${salon.postcode}` : ''}</p>
+            <div className="flex gap-2 mt-3 flex-wrap">
+              {salon.is_verified && <span className="badge-pill bg-gn/90 text-white text-xs">✓ Verified</span>}
+              <span className={`badge-pill text-white text-xs ${salon.is_open ? 'bg-gn/90' : 'bg-white/15'}`}>{salon.is_open ? '● Open Now' : '● Closed'}</span>
+              {salon.accepts_online_bookings && <span className="badge-pill bg-white/15 text-white text-xs">📅 Online Booking</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Contact actions */}
+        <div className="container flex gap-2 flex-wrap mt-4">
+          {salon.phone && <a href={`tel:${salon.phone}`} className="btn btn-sm bg-white/10 text-white hover:bg-white/20 text-xs">📞 Call</a>}
+          <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn btn-sm bg-white/10 text-white hover:bg-white/20 text-xs">🧭 Directions</a>
+          {salon.website && <a href={salon.website} target="_blank" rel="noreferrer" className="btn btn-sm bg-white/10 text-white hover:bg-white/20 text-xs">🌐 Website</a>}
+          <SaveButton salonId={salon.id} initialSaved={isSaved} className="btn btn-sm bg-white/10 text-white hover:bg-white/20 text-xs"/>
+          <a href={`mailto:?subject=${encodeURIComponent(salon.name)}&body=${encodeURIComponent(`Check out ${salon.name} on GlowNaija`)}`}
+            className="btn btn-sm bg-white/10 text-white hover:bg-white/20 text-xs">🔗 Share</a>
+        </div>
+
+        {/* Section nav */}
+        <div className="container flex gap-1 flex-wrap mt-4 border-t border-white/10 pt-3">
+          {[['about','About'],['pricing','Pricing'],['gallery','Gallery'],['reviews','Reviews'],['location','Location']].map(([id,label]) => (
+            <a key={id} href={`#${id}`} className="px-3 py-1.5 text-xs font-bold text-white/60 hover:text-white transition-colors">{label}</a>
+          ))}
         </div>
       </div>
 
       {/* Main content */}
       <div className="container py-8">
-        <div className="grid grid-cols-1 gap-6" style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr)' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6">
 
           {/* Left column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="flex flex-col gap-6">
 
             {/* About */}
             {salon.description && (
-              <div className="card card-body">
+              <div className="card card-body" id="about">
                 <h2 className="font-bold text-lg mb-3">About</h2>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-2)' }}>{salon.description}</p>
+                <p className="text-sm leading-relaxed text-ink-2">{salon.description}</p>
+                {salon.accepts_online_bookings && (
+                  <span className="badge-pill bg-green-100 text-gn text-2xs mt-3 inline-block">✓ Booking Enabled</span>
+                )}
               </div>
             )}
 
-            {/* Services */}
+            {/* Services & Pricing */}
             {(services?.length || 0) > 0 && (
-              <div className="card card-body">
-                <h2 className="font-bold text-lg mb-3">Services</h2>
+              <div className="card card-body" id="pricing">
+                <div className="flex justify-between items-center mb-1">
+                  <h2 className="font-bold text-lg">Services &amp; Pricing</h2>
+                  <span className="text-xs text-ink-3">From <strong className="text-ink">{fmtPrice(cheapest)}</strong></span>
+                </div>
                 {Object.entries(svcGroups).map(([cat, svcs]: [string, any]) => (
                   <div key={cat}>
-                    <p className="text-xs font-bold uppercase tracking-wide my-3" style={{ color: 'var(--ink-3)' }}>{cat}</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-ink-3 my-3">{cat}</p>
                     {svcs.map((s: any) => <ServiceRow key={s.id} service={s} salonId={salon.id}/>)}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Highlights */}
+            {(salon.tags?.length || 0) > 0 && (
+              <div className="card card-body">
+                <h2 className="font-bold text-lg mb-3">Highlights</h2>
+                <div className="flex flex-wrap gap-2">
+                  {salon.tags.map((t: string) => (
+                    <span key={t} className="badge-pill bg-page-2 text-ink-2 text-xs">{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Gallery */}
+            {(salon.images?.length || 0) > 0 && (
+              <div className="card card-body" id="gallery">
+                <h2 className="font-bold text-lg mb-3">Gallery</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {salon.images.map((img: string, i: number) => (
+                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-page-2">
+                      <img src={img} alt={`${salon.name} photo ${i + 1}`} className="w-full h-full object-cover"/>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -114,9 +172,7 @@ export default async function SalonPage({ params }: { params: { slug: string } }
               <div className="card card-body">
                 <h2 className="font-bold text-lg mb-3">Opening Hours</h2>
                 {hours!.map(h => (
-                  <div key={h.day_of_week}
-                    className="flex justify-between py-2.5 border-b border-bdr"
-                    style={h.day_of_week === today ? { fontWeight: 700, color: 'var(--rose)' } : {}}>
+                  <div key={h.day_of_week} className={`flex justify-between py-2.5 border-b border-bdr last:border-0 ${h.day_of_week === today ? 'font-bold text-rose' : ''}`}>
                     <span>{days[h.day_of_week]}{h.day_of_week === today ? ' (Today)' : ''}</span>
                     <span>{h.is_closed ? 'Closed' : `${h.open_time?.substring(0,5)} – ${h.close_time?.substring(0,5)}`}</span>
                   </div>
@@ -129,7 +185,7 @@ export default async function SalonPage({ params }: { params: { slug: string } }
               <h2 className="font-bold text-lg mb-4">Reviews ({salon.review_count})</h2>
               {reviews?.length
                 ? reviews.map(r => <ReviewCard key={r.id} review={{ ...r, ...(r.profiles as any) }}/>)
-                : <p className="text-sm" style={{ color: 'var(--ink-3)' }}>No reviews yet — be the first!</p>
+                : <p className="text-sm text-ink-3">No reviews yet — be the first!</p>
               }
             </div>
 
@@ -165,34 +221,84 @@ export default async function SalonPage({ params }: { params: { slug: string } }
               </form>
             </div>
 
+            {/* Similar salons */}
+            {(similar?.length || 0) > 0 && (
+              <div>
+                <h2 className="font-bold text-lg mb-3">You may also be interested in</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {similar!.map(s => (
+                    <Link key={s.id} href={`/salon/${s.slug}`} className="card group">
+                      <div className="relative h-28 bg-gradient-to-br from-ink to-purple-900 overflow-hidden">
+                        {s.images?.[0]
+                          ? <img src={s.images[0]} alt={s.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform"/>
+                          : <div className="absolute inset-0 flex items-center justify-center text-4xl">{s.emoji}</div>}
+                      </div>
+                      <div className="p-3">
+                        <p className="font-bold text-sm truncate">{s.name}</p>
+                        <p className="text-xs text-ink-3">📍 {s.area}</p>
+                        <p className="text-xs text-ink-3 mt-1">★ {s.rating || '—'} ({s.review_count})</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right column — sticky sidebar */}
           <div>
-            <div className="card card-body" style={{ position: 'sticky', top: '5rem' }}>
-              <Link href={`/booking?salon=${salon.id}`} className="btn btn-primary w-full justify-center mb-4">
+            <div className="card card-body sticky top-20 space-y-4">
+              <div>
+                <p className="text-xs text-ink-3">Starting from</p>
+                <p className="text-2xl font-black">{fmtPrice(cheapest)}</p>
+              </div>
+
+              <Link href={`/booking?salon=${salon.id}`} className="btn btn-primary w-full justify-center">
                 Book Appointment →
               </Link>
-              {salon.phone && (
-                <a href={`tel:${salon.phone}`} className="flex items-center gap-2 py-2.5 border-b border-bdr text-sm font-semibold">
-                  📞 {salon.phone}
-                </a>
+              <a href="#pricing" className="btn btn-outline w-full justify-center text-sm">Check Availability</a>
+
+              <div className="space-y-2 pt-2 border-t border-bdr text-xs text-ink-3">
+                <p>✅ Instant confirmation — no waiting for approval</p>
+                <p>💷 Transparent pricing, no hidden charges</p>
+                <p>🔒 Secure payments on GlowNaija</p>
+                {salon.is_verified && <p>🛡️ Verified salon on GlowNaija</p>}
+              </div>
+
+              {owner && (
+                <div className="pt-3 border-t border-bdr">
+                  <p className="text-2xs font-bold uppercase tracking-wide text-ink-3 mb-2">Salon Owner</p>
+                  <div className="flex items-center gap-2.5">
+                    {owner.avatar_url
+                      ? <img src={owner.avatar_url} className="w-9 h-9 rounded-full object-cover flex-shrink-0" alt=""/>
+                      : <div className="w-9 h-9 rounded-full bg-rose flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{owner.first_name?.[0] || '?'}</div>}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold truncate">{owner.first_name} {owner.last_name}</p>
+                      <a href="#enquiry" className="text-2xs text-rose font-semibold">Contact via enquiry form</a>
+                    </div>
+                  </div>
+                </div>
               )}
-              {salon.instagram && (
-                <a href={`https://instagram.com/${salon.instagram}`} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-2 py-2.5 border-b border-bdr text-sm font-semibold">
-                  📸 @{salon.instagram}
-                </a>
-              )}
-              {salon.website && (
-                <a href={salon.website} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-2 py-2.5 text-sm font-semibold">
-                  🌐 Website
-                </a>
-              )}
-              <a href="#enquiry" className="btn btn-outline w-full justify-center mt-4 text-sm">
-                Send Enquiry
-              </a>
+
+              <div className="pt-3 border-t border-bdr">
+                <p className="text-2xs font-bold uppercase tracking-wide text-ink-3 mb-1">Today</p>
+                <p className="text-sm font-semibold">
+                  {todayHours ? (todayHours.is_closed ? 'Closed today' : `${todayHours.open_time?.substring(0,5)} – ${todayHours.close_time?.substring(0,5)}`) : 'Hours not set'}
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-bdr space-y-2" id="location">
+                <p className="text-2xs font-bold uppercase tracking-wide text-ink-3 mb-1">Location</p>
+                {salon.address && <p className="text-sm">{salon.address}</p>}
+                <p className="text-sm text-ink-3">{salon.area}, {salon.city}{salon.postcode ? `, ${salon.postcode}` : ''}</p>
+                {salon.phone && <a href={`tel:${salon.phone}`} className="flex items-center gap-2 text-sm font-semibold">📞 {salon.phone}</a>}
+                {salon.instagram && (
+                  <a href={`https://instagram.com/${salon.instagram}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-semibold">
+                    📸 @{salon.instagram}
+                  </a>
+                )}
+                <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn btn-outline w-full justify-center text-xs mt-2">🧭 Get Directions</a>
+              </div>
             </div>
           </div>
 
