@@ -96,13 +96,13 @@ export default function SignInPage() {
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-sm">🔒</span>
               <input name="password" type={showPwd ? 'text' : 'password'} className="input pl-10 pr-12" placeholder="Enter your password" required autoComplete="current-password" />
-              <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 text-base">
+              <button type="button" onClick={() => setShowPwd(!showPwd)} aria-label={showPwd ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 text-base">
                 {showPwd ? '🙈' : '👁'}
               </button>
             </div>
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" defaultChecked className="w-4 h-4 accent-rose" />
+            <input name="remember" type="checkbox" defaultChecked className="w-4 h-4 accent-rose" />
             <span className="text-sm text-ink-2">Remember me</span>
           </label>
           <button type="submit" disabled={loading} className="btn btn-primary w-full justify-center text-base py-3.5">

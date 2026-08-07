@@ -5,6 +5,7 @@ import Link               from 'next/link'
 import { fmtPrice }       from '@/lib/utils'
 import { cancelBooking }  from '@/lib/actions/bookings'
 import { updateProfile }  from '@/lib/actions/account'
+import { signOut }        from '@/lib/actions/auth'
 import DashboardSidebar   from '@/components/layout/DashboardSidebar'
 import ActionForm         from '@/components/dashboard/ActionForm'
 import { expireStaleBookings } from '@/lib/bookings-expiry'
@@ -534,13 +535,7 @@ export default async function AccountPage({
                     <p className="font-semibold text-sm">Sign Out</p>
                     <p className="text-xs text-ink-3">Sign out of this device</p>
                   </div>
-                  <form action={async () => {
-                    'use server'
-                    const { createClient } = await import('@/lib/supabase/server')
-                    const sb = await createClient()
-                    await sb.auth.signOut()
-                    redirect('/')
-                  }}>
+                  <form action={signOut}>
                     <button className="btn btn-outline btn-sm text-rose border-rose/50">Sign Out</button>
                   </form>
                 </div>

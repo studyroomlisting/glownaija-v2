@@ -109,7 +109,7 @@ export default function SignUpPage() {
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-sm">🔒</span>
               <input name="password" type={showPwd ? 'text' : 'password'} className="input pl-9 pr-11" placeholder="Choose a strong password" required value={pwd} onChange={e=>setPwd(e.target.value)} minLength={8} />
-              <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 text-base">{showPwd ? '🙈' : '👁'}</button>
+              <button type="button" onClick={() => setShowPwd(!showPwd)} aria-label={showPwd ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 text-base">{showPwd ? '🙈' : '👁'}</button>
             </div>
             {pwd && (
               <div className="mt-1.5">
@@ -123,7 +123,7 @@ export default function SignUpPage() {
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-sm">🔒</span>
               <input name="confirm" type={showConf ? 'text' : 'password'} className="input pl-9 pr-11" placeholder="Repeat your password" required value={conf} onChange={e=>setConf(e.target.value)} />
-              <button type="button" onClick={() => setShowConf(!showConf)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 text-base">{showConf ? '🙈' : '👁'}</button>
+              <button type="button" onClick={() => setShowConf(!showConf)} aria-label={showConf ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 text-base">{showConf ? '🙈' : '👁'}</button>
             </div>
             {conf && <p className={`text-xs mt-1 ${pwd===conf?'text-gn':'text-rose'}`}>{pwd===conf?'✓ Passwords match':'✗ Passwords do not match'}</p>}
           </div>
