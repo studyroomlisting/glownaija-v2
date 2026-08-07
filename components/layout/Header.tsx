@@ -96,13 +96,13 @@ export default function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-7 text-sm font-semibold text-ink-3" aria-label="Main navigation">
+        <nav className="hidden md:flex items-center gap-2 text-sm font-semibold text-ink-3" aria-label="Main navigation">
           {NAV_LINKS.map(([href, label]) => {
             const active = pathname === href || pathname?.startsWith(`${href}/`)
             return (
               <Link key={href} href={href}
                 aria-current={active ? 'page' : undefined}
-                className={`transition-colors ${active ? 'text-rose' : 'hover:text-rose'}`}>
+                className={`px-3 py-1.5 rounded-full transition-colors ${active ? 'bg-rose text-white' : 'hover:bg-page-2 hover:text-rose'}`}>
                 {label}
               </Link>
             )
@@ -113,7 +113,7 @@ export default function Header() {
             <button
               onClick={() => setGlowMenuOpen(v => !v)}
               aria-haspopup="true" aria-expanded={glowMenuOpen}
-              className={`flex items-center gap-1 transition-colors ${glowMenuOpen || pathname === '/chat' || pathname === '/stylist' ? 'text-rose' : 'hover:text-rose'}`}>
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition-colors ${glowMenuOpen || pathname === '/chat' || pathname === '/stylist' ? 'bg-rose text-white' : 'hover:bg-page-2 hover:text-rose'}`}>
               ✦ Glow AI
               <span className={`text-xs transition-transform ${glowMenuOpen ? 'rotate-45' : ''}`}>＋</span>
             </button>
@@ -174,9 +174,6 @@ export default function Header() {
             </div>
           )}
 
-          {(!user || isOwner) && !profile?.is_admin && (
-            <Link href="/business" className="hidden md:flex btn btn-primary btn-sm ml-1">List Your Salon</Link>
-          )}
           {isOwner && (
             <Link href="/dashboard" className="hidden md:flex btn btn-outline btn-sm ml-1">Dashboard</Link>
           )}
@@ -228,12 +225,11 @@ export default function Header() {
             return (
               <Link key={href} href={href}
                 aria-current={active ? 'page' : undefined}
-                className={`text-sm font-semibold py-2.5 border-b border-bdr ${active ? 'text-rose' : 'text-ink-2'}`}
+                className={`text-sm font-semibold py-2.5 px-3 -mx-3 rounded-xl border-b border-bdr ${active ? 'bg-rose text-white border-transparent' : 'text-ink-2'}`}
                 onClick={() => setMobileOpen(false)}>{label}</Link>
             )
           })}
 
-          {(!user || isOwner) && !profile?.is_admin && <Link href="/business" className="btn btn-primary btn-sm justify-center mt-3" onClick={() => setMobileOpen(false)}>List Your Salon</Link>}
           {isOwner  && <Link href="/dashboard" className="btn btn-outline btn-sm justify-center mt-3" onClick={() => setMobileOpen(false)}>Dashboard</Link>}
 
           {user ? (

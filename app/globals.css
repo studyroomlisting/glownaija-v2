@@ -19,6 +19,10 @@
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem; /* keeps anchor-linked sections clear of the sticky header */
+}
 @layer base {
   * { box-sizing: border-box; }
   body {

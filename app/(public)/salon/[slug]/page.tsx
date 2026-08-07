@@ -3,11 +3,14 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { notFound }     from 'next/navigation'
 import Link             from 'next/link'
+import Image            from 'next/image'
 import type { Metadata } from 'next'
 import Breadcrumb  from '@/components/layout/Breadcrumb'
 import ServiceRow  from '@/components/salon/ServiceRow'
 import ReviewCard  from '@/components/salon/ReviewCard'
 import SaveButton  from '@/components/salon/SaveButton'
+import ReviewForm  from '@/components/salon/ReviewForm'
+import Gallery      from '@/components/salon/Gallery'
 import { fmtPrice } from '@/lib/utils'
 import { submitEnquiry } from '@/lib/actions/salons'
 
@@ -44,20 +47,18 @@ export default async function SalonPage({ params }: { params: { slug: string } }
     { data: services },
     { data: hours },
     { data: reviews },
-    { data: { user } },
     { data: owner },
     { data: similar },
   ] = await Promise.all([
     supabase.from('services').select('*').eq('salon_id', salon.id).eq('is_active', true).order('sort_order'),
     supabase.from('salon_opening_hours').select('*').eq('salon_id', salon.id).order('day_of_week'),
     supabase.from('reviews').select('*, profiles(first_name,last_name)').eq('salon_id', salon.id).order('created_at', { ascending: false }).limit(15),
-    supabase.auth.getUser(),
     supabase.from('profiles').select('first_name,last_name,avatar_url,email').eq('id', salon.owner_id).single(),
     supabase.from('salons').select('*').eq('city', salon.city).eq('listing_status','approved').eq('is_active', true).neq('id', salon.id).order('rating', { ascending: false }).limit(3),
   ])
 
-  const isSaved = user
-    ? !!(await supabase.from('saved_salons').select('id').eq('user_id', user.id).eq('salon_id', salon.id).single()).data
+  const isSaved = viewer
+    ? !!(await supabase.from('saved_salons').select('id').eq('user_id', viewer.id).eq('salon_id', salon.id).single()).data
     : false
 
   const today = new Date().getDay()
@@ -85,16 +86,14 @@ export default async function SalonPage({ params }: { params: { slug: string } }
         { label: salon.name },
       ]}/>
 
-      {/* Image banner */}
-      <div className="container pt-5">
-        <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-ink to-purple-900">
-          {salon.images?.[0] ? (
-            <img src={salon.images[0]} alt={salon.name} className="w-full h-full object-cover"/>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-7xl">{salon.emoji}</div>
-          )}
-          <span className="absolute top-3 right-3 badge-pill bg-white/95 text-ink text-xs font-bold">★ {salon.rating || '—'} ({salon.review_count} reviews)</span>
-        </div>
+      {/* Image banner — full width, edge to edge */}
+      <div className="relative h-56 sm:h-72 md:h-96 w-full overflow-hidden bg-gradient-to-br from-ink to-purple-900">
+        {salon.images?.[0] ? (
+          <Image src={salon.images[0]} alt={salon.name} fill priority quality={90} sizes="100vw" className="object-cover"/>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-7xl">{salon.emoji}</div>
+        )}
+        <span className="absolute top-4 right-4 badge-pill bg-white/95 text-ink text-xs font-bold">★ {salon.rating || '—'} ({salon.review_count} reviews)</span>
       </div>
 
       {/* Info section */}
@@ -182,13 +181,7 @@ export default async function SalonPage({ params }: { params: { slug: string } }
             {(salon.images?.length || 0) > 0 && (
               <div className="card card-body" id="gallery">
                 <h2 className="font-bold text-lg mb-3">Gallery</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {salon.images.map((img: string, i: number) => (
-                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-page-2">
-                      <img src={img} alt={`${salon.name} photo ${i + 1}`} className="w-full h-full object-cover"/>
-                    </div>
-                  ))}
-                </div>
+                <Gallery images={salon.images} alt={salon.name}/>
               </div>
             )}
 
@@ -208,6 +201,9 @@ export default async function SalonPage({ params }: { params: { slug: string } }
             {/* Reviews */}
             <div className="card card-body" id="reviews">
               <h2 className="font-bold text-lg mb-4">Reviews ({salon.review_count})</h2>
+              <div className="mb-5">
+                <ReviewForm salonId={salon.id} slug={salon.slug} loggedIn={!!viewer}/>
+              </div>
               {reviews?.length
                 ? reviews.map(r => <ReviewCard key={r.id} review={{ ...r, ...(r.profiles as any) }}/>)
                 : <p className="text-sm text-ink-3">No reviews yet — be the first!</p>

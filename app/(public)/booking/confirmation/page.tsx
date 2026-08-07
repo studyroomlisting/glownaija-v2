@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { fmtPrice } from '@/lib/utils'
 import { cancelBooking } from '@/lib/actions/bookings'
 import ActionButton from '@/components/dashboard/ActionButton'
+import PaymentCountdown from '@/components/booking/PaymentCountdown'
 import { expireStaleBookings } from '@/lib/bookings-expiry'
 
 export default async function BookingConfirmationPage({ searchParams }: { searchParams: { ref?: string } }) {
@@ -55,13 +56,11 @@ export default async function BookingConfirmationPage({ searchParams }: { search
           {statusMeta.icon}
         </div>
         <h1 className="text-2xl md:text-3xl font-black mb-2">{statusMeta.title}</h1>
-        {unpaid && minutesLeft !== null && (
+        {unpaid && minutesLeft !== null && minutesLeft > 0 && (
           <p className="text-ink-3 text-sm max-w-md mx-auto">Your slot is being held temporarily. Complete your deposit payment to confirm your booking.</p>
         )}
-        {unpaid && minutesLeft !== null && (
-          <p className={`text-xs font-bold mt-2 ${minutesLeft <= 5 ? 'text-rose' : 'text-gold'}`}>
-            ⏱ Pay within {minutesLeft} minute{minutesLeft !== 1 ? 's' : ''} or this booking will be automatically released.
-          </p>
+        {unpaid && minutesLeft !== null && minutesLeft > 0 && (
+          <PaymentCountdown createdAt={booking.created_at}/>
         )}
         {booking.status === 'confirmed' && (
           <p className="text-ink-3 text-sm">Your appointment at <strong>{salon?.name}</strong> is booked.</p>
