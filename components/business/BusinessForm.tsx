@@ -28,6 +28,7 @@ export default function BusinessForm({ bTypes, cities }: BusinessFormProps) {
       )}
 
       <div><label className="label">Salon Name *</label><input name="business_name" className="input" placeholder="e.g. Adaeze Natural Hair Studio" required/></div>
+      <div><label className="label">Street Address</label><input name="address" className="input" placeholder="e.g. 45 Rye Lane" maxLength={200}/></div>
       <div><label className="label">Business Type *</label><select name="business_type" className="input">{bTypes.map(t=><option key={t}>{t}</option>)}</select></div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className="label">City *</label><select name="city" className="input">{cities.map(c=><option key={c}>{c}</option>)}</select></div>

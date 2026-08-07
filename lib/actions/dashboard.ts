@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect }       from 'next/navigation'
 import { createClient }   from '@/lib/supabase/server'
-import { isValidEmail, isValidPhone, isValidUKPostcode } from '@/lib/utils'
+import { isValidEmail, isValidPhone, isValidUKPostcode, normalizeSocialUrl, normalizeWhatsApp } from '@/lib/utils'
 
 // Every action below verifies ownership against the SPECIFIC salon_id passed in,
 // not just "the salon this owner has" — a single owner can now have multiple
@@ -12,6 +12,33 @@ async function getOwnedSalon(supabase: any, userId: string, salonId: string) {
   if (!salonId) return null
   const { data: salon } = await supabase.from('salons').select('id').eq('id', salonId).eq('owner_id', userId).single()
   return salon
+}
+
+export async function toggleSalonPublished(salonId: string, publish: boolean) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/signin')
+
+  try {
+    const salon = await getOwnedSalon(supabase, user.id, salonId)
+    if (!salon) return { error: 'Salon not found, or you do not have access to it.' }
+
+    // Only an approved listing can be published/unpublished this way — a pending or
+    // suspended salon's visibility is an admin-moderation decision, not something
+    // an owner should be able to override via this toggle.
+    const { data: fullSalon } = await supabase.from('salons').select('listing_status').eq('id', salonId).single()
+    if (fullSalon?.listing_status !== 'approved') {
+      return { error: 'This listing needs admin approval before it can be published.' }
+    }
+
+    const { error } = await supabase.from('salons').update({ is_active: publish }).eq('id', salonId)
+    if (error) return { error: `Could not update listing: ${error.message}` }
+
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (err: any) {
+    return { error: err?.message || 'Something went wrong.' }
+  }
 }
 
 export async function updateProfile(formData: FormData) {
@@ -26,6 +53,7 @@ export async function updateProfile(formData: FormData) {
 
     const name      = (formData.get('name')        as string).trim()
     const area      = (formData.get('area')        as string).trim()
+    const address   = (formData.get('address')     as string || '').trim()
     const city      = formData.get('city')         as string
     const desc      = (formData.get('description') as string || '').trim()
     const phone     = (formData.get('phone')       as string || '').trim()
@@ -35,12 +63,34 @@ export async function updateProfile(formData: FormData) {
       .replace(/^@/, '').replace(/\/+$/, '')
     const website   = (formData.get('website')     as string || '').trim()
     const postcode  = (formData.get('postcode')    as string || '').trim().toUpperCase()
+
+    const facebookIn = (formData.get('facebook') as string || '')
+    const twitterIn  = (formData.get('twitter')  as string || '')
+    const youtubeIn  = (formData.get('youtube')  as string || '')
+    const linkedinIn = (formData.get('linkedin') as string || '')
+    const whatsappIn = (formData.get('whatsapp') as string || '')
+    const googleBizIn= (formData.get('google_business') as string || '')
+
+    const facebookR  = normalizeSocialUrl(facebookIn, 'facebook')
+    const twitterR   = normalizeSocialUrl(twitterIn, 'twitter')
+    const youtubeR   = normalizeSocialUrl(youtubeIn, 'youtube')
+    const linkedinR  = normalizeSocialUrl(linkedinIn, 'linkedin')
+    const googleBizR = normalizeSocialUrl(googleBizIn, 'google_business')
+    const whatsappR  = normalizeWhatsApp(whatsappIn)
+
+    for (const r of [facebookR, twitterR, youtubeR, linkedinR, googleBizR, whatsappR]) {
+      if (r.error) return { error: r.error }
+    }
     const is_open   = formData.get('is_open') === 'on'
     const online_bk = formData.get('accepts_online_bookings') === 'on'
     const tagsRaw   = (formData.get('tags') as string || '').split(',').map(t => t.trim()).filter(Boolean)
 
     if (!name || name.length < 2) return { error: 'Salon name is required (min 2 characters).' }
+    if (name.length > 100)        return { error: 'Salon name must be under 100 characters.' }
     if (!area)                    return { error: 'Area is required.' }
+    if (area.length > 100)        return { error: 'Area must be under 100 characters.' }
+    if (address.length > 200)     return { error: 'Address must be under 200 characters.' }
+    if (desc.length > 1500)       return { error: 'Description must be under 1500 characters.' }
     if (phone && !isValidPhone(phone))         return { error: 'Please enter a valid phone number.' }
     if (email && !isValidEmail(email))         return { error: 'Please enter a valid email address.' }
     if (postcode && !isValidUKPostcode(postcode)) return { error: 'Please enter a valid UK postcode.' }
@@ -48,9 +98,11 @@ export async function updateProfile(formData: FormData) {
     if (instagram && !/^[a-zA-Z0-9._]{1,60}$/.test(instagram)) return { error: 'Instagram handle looks invalid — paste just your username or profile link.' }
 
     const { error } = await supabase.from('salons').update({
-      name, area, city, description: desc || null,
+      name, area, address: address || null, city, description: desc || null,
       phone: phone || null, email: email || null,
       instagram: instagram || null, website: website || null,
+      facebook: facebookR.url, twitter: twitterR.url, youtube: youtubeR.url,
+      linkedin: linkedinR.url, whatsapp: whatsappR.url, google_business: googleBizR.url,
       postcode: postcode || null, is_open, accepts_online_bookings: online_bk, tags: tagsRaw,
     }).eq('id', salon.id)
 
@@ -78,6 +130,7 @@ export async function addService(formData: FormData) {
     const priceValue = parseFloat(priceInput)
 
     if (!name || name.length < 2)              return { error: 'Service name is required (min 2 characters).' }
+    if (name.length > 80)                      return { error: 'Service name must be under 80 characters.' }
     if (!priceInput || isNaN(priceValue) || priceValue <= 0) return { error: 'Please enter a valid price greater than £0.' }
     if (priceValue > 9999)                     return { error: 'Price seems too high — please check and try again.' }
 

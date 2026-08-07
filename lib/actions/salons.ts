@@ -26,6 +26,7 @@ export async function createSalon(formData: FormData) {
 
   // Validation
   if (!name || name.length < 2) return { error: 'Business name is required.' }
+  if (name.length > 100) return { error: 'Business name must be under 100 characters.' }
   if (!city) return { error: 'City is required.' }
   if (!area) return { error: 'Area is required.' }
   if (!isValidEmail(email)) return { error: 'Please enter a valid contact email.' }
@@ -145,6 +146,7 @@ export async function submitReview(formData: FormData) {
 
   if (rating < 1 || rating > 5)   return { error: 'Please select a star rating.' }
   if (review_text.length < 10)    return { error: 'Review must be at least 10 characters.' }
+  if (review_text.length > 1000)  return { error: 'Review must be under 1000 characters.' }
 
   const { data: exists } = await supabase.from('reviews')
     .select('id').eq('reviewer_id', user.id).eq('salon_id', salon_id).single()
@@ -183,6 +185,7 @@ export async function submitEnquiry(formData: FormData) {
   if (!isValidEmail(email))  return { error: 'Please enter a valid email address.' }
   if (phone && !isValidPhone(phone)) return { error: 'Please enter a valid phone number.' }
   if (message.length < 10)   return { error: 'Message must be at least 10 characters.' }
+  if (message.length > 2000) return { error: 'Message must be under 2000 characters.' }
 
   const { error } = await supabase.from('enquiries').insert({
     salon_id, sender_id: user?.id || null,

@@ -334,6 +334,16 @@ export default async function SalonPage({ params }: { params: { slug: string } }
                     📸 @{salon.instagram}
                   </a>
                 )}
+                {(salon.facebook || salon.twitter || salon.youtube || salon.linkedin || salon.whatsapp || salon.google_business) && (
+                  <div className="flex gap-2 pt-1">
+                    {salon.facebook && <a href={salon.facebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">📘</a>}
+                    {salon.twitter && <a href={salon.twitter} target="_blank" rel="noreferrer" aria-label="Twitter / X" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">🐦</a>}
+                    {salon.youtube && <a href={salon.youtube} target="_blank" rel="noreferrer" aria-label="YouTube" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">▶️</a>}
+                    {salon.linkedin && <a href={salon.linkedin} target="_blank" rel="noreferrer" aria-label="LinkedIn" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">💼</a>}
+                    {salon.whatsapp && <a href={salon.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">💬</a>}
+                    {salon.google_business && <a href={salon.google_business} target="_blank" rel="noreferrer" aria-label="Google Business" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">📍</a>}
+                  </div>
+                )}
                 <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn btn-outline w-full justify-center text-xs mt-2">🧭 Get Directions</a>
               </div>
             </div>

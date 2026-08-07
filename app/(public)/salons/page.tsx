@@ -26,7 +26,19 @@ export default async function SalonsPage({ searchParams }: { searchParams: Salon
 
   if (searchParams.city)       query = query.eq('city', searchParams.city)
   if (searchParams.service)    query = query.contains('service_types', [searchParams.service])
-  if (searchParams.search)     query = query.or(`name.ilike.%${searchParams.search}%,area.ilike.%${searchParams.search}%`)
+  if (searchParams.search) {
+    const term = searchParams.search.trim()
+    // Also match salons that offer a service whose name contains the search term
+    // (e.g. searching "knotless braids" should find the salon even if neither its
+    // name nor area literally contains those words).
+    const { data: matchingServices } = await supabase.from('services').select('salon_id').ilike('name', `%${term}%`)
+    const serviceSalonIds = [...new Set((matchingServices || []).map(s => s.salon_id))]
+    if (serviceSalonIds.length) {
+      query = query.or(`name.ilike.%${term}%,area.ilike.%${term}%,id.in.(${serviceSalonIds.join(',')})`)
+    } else {
+      query = query.or(`name.ilike.%${term}%,area.ilike.%${term}%`)
+    }
+  }
   if (searchParams.price_min)  query = query.gte('price_from', parseInt(searchParams.price_min))
   if (searchParams.price_max)  query = query.lte('price_from', parseInt(searchParams.price_max))
   if (searchParams.verified === '1') query = query.eq('is_verified', true)

@@ -52,6 +52,57 @@ export function isValidName(name: string): boolean {
   return /^[A-Za-z][A-Za-z\s'.-]{1,59}$/.test(name.trim())
 }
 
+interface SocialPlatformConfig { domains: string[]; canonicalDomain: string; handlePrefix?: string; label: string }
+
+const SOCIAL_PLATFORMS: Record<string, SocialPlatformConfig> = {
+  instagram: { domains: ['instagram.com'], canonicalDomain: 'instagram.com', label: 'Instagram' },
+  facebook:  { domains: ['facebook.com', 'fb.com'], canonicalDomain: 'facebook.com', label: 'Facebook' },
+  twitter:   { domains: ['twitter.com', 'x.com'], canonicalDomain: 'x.com', label: 'Twitter / X' },
+  youtube:   { domains: ['youtube.com', 'youtu.be'], canonicalDomain: 'youtube.com', handlePrefix: '@', label: 'YouTube' },
+  linkedin:  { domains: ['linkedin.com'], canonicalDomain: 'linkedin.com', label: 'LinkedIn' },
+  google_business: { domains: ['google.com', 'g.page', 'goo.gl', 'maps.app.goo.gl'], canonicalDomain: 'g.page', label: 'Google Business' },
+}
+
+/**
+ * Normalizes a social-media field into a full https:// URL, or returns an error
+ * if the input clearly belongs to a different platform (e.g. pasting a Facebook
+ * link into the Twitter field). Accepts a bare handle ("yoursalon") just as
+ * happily as a full URL — bare handles are expanded against the platform's
+ * canonical domain.
+ */
+export function normalizeSocialUrl(raw: string, platform: keyof typeof SOCIAL_PLATFORMS): { url: string | null; error?: string } {
+  const input = raw.trim()
+  if (!input) return { url: null }
+
+  const config = SOCIAL_PLATFORMS[platform]
+  const stripped = input.replace(/^https?:\/\//i, '').replace(/^www\./i, '')
+  const looksLikeUrl = stripped.includes('.') && stripped.includes('/')
+
+  if (looksLikeUrl) {
+    const domainMatches = config.domains.some(d => stripped.toLowerCase().startsWith(d))
+    if (!domainMatches) return { url: null, error: `That doesn't look like a ${config.label} link. Please paste a ${config.canonicalDomain} URL, or just your handle.` }
+    return { url: `https://${stripped.replace(/\/+$/, '')}` }
+  }
+
+  // Treat as a bare handle — strip a leading @ before rebuilding, then re-add the
+  // platform's expected prefix (only YouTube uses @handles in its URL structure).
+  const handle = stripped.replace(/^@/, '').replace(/^\/+|\/+$/g, '')
+  if (!handle) return { url: null }
+  if (!/^[a-zA-Z0-9._-]{1,60}$/.test(handle)) return { url: null, error: `${config.label} handle looks invalid.` }
+
+  return { url: `https://${config.canonicalDomain}/${config.handlePrefix || ''}${handle}` }
+}
+
+/** WhatsApp is a phone number, not a handle — normalizes to a wa.me link. */
+export function normalizeWhatsApp(raw: string): { url: string | null; error?: string } {
+  const input = raw.trim()
+  if (!input) return { url: null }
+  if (/^https?:\/\/(www\.)?wa\.me\//i.test(input)) return { url: input }
+  const digits = input.replace(/[^0-9]/g, '')
+  if (digits.length < 7 || digits.length > 15) return { url: null, error: 'Please enter a valid WhatsApp number, e.g. +44 7700 900000.' }
+  return { url: `https://wa.me/${digits}` }
+}
+
 // Generate 30-minute slots between open and close time
 export function generateSlots(openTime: string, closeTime: string): string[] {
   const slots: string[] = []

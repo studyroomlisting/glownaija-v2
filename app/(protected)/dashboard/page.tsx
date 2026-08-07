@@ -9,7 +9,7 @@ import ReviewCard         from '@/components/salon/ReviewCard'
 import ActionForm         from '@/components/dashboard/ActionForm'
 import ActionButton       from '@/components/dashboard/ActionButton'
 import DashboardSidebar   from '@/components/layout/DashboardSidebar'
-import { addService, updateProfile, updateHours, updateEnquiryStatus, deleteService } from '@/lib/actions/dashboard'
+import { addService, updateProfile, updateHours, updateEnquiryStatus, deleteService, toggleSalonPublished } from '@/lib/actions/dashboard'
 import { updateBookingStatus } from '@/lib/actions/bookings'
 import { expireStaleBookings } from '@/lib/bookings-expiry'
 
@@ -164,6 +164,18 @@ export default async function DashboardPage({
               <span className={`btn btn-sm text-xs border-2 ${salon.is_open ? 'border-gn bg-green-50 text-gn' : 'border-bdr bg-page-2 text-ink-3'}`}>
                 {salon.is_open ? '● Open' : '● Closed'}
               </span>
+              <span className={`btn btn-sm text-xs border-2 ${salon.is_active ? 'border-blue-300 bg-blue-50 text-blue-600' : 'border-gold bg-yellow-50 text-gold'}`}>
+                {salon.is_active ? '🌐 Published' : '🚫 Unpublished'}
+              </span>
+              {salon.listing_status === 'approved' && (
+                <ActionButton
+                  action={toggleSalonPublished.bind(null, salon.id, !salon.is_active)}
+                  className={`btn btn-sm text-xs ${salon.is_active ? 'btn-outline text-rose border-rose/50' : 'btn-green'}`}
+                  confirmMessage={salon.is_active ? `Unpublish "${salon.name}"? It will be hidden from the website until you publish it again.` : undefined}
+                >
+                  {salon.is_active ? 'Unpublish' : 'Publish'}
+                </ActionButton>
+              )}
             </div>
           </div>
 
@@ -409,6 +421,10 @@ export default async function DashboardPage({
                         <span className={`badge-pill text-2xs ${s.is_open ? 'bg-green-100 text-gn' : 'bg-page-2 text-ink-3'}`}>
                           {s.is_open ? 'Open' : 'Closed'}
                         </span>
+                        {' '}
+                        <span className={`badge-pill text-2xs ${s.is_active ? 'bg-blue-100 text-blue-600' : 'bg-yellow-100 text-gold'}`}>
+                          {s.is_active ? 'Published' : 'Unpublished'}
+                        </span>
                       </td>
                       <td className="px-5 py-3 text-ink-3">{s.rating ? `★${s.rating} (${s.review_count})` : 'No reviews'}</td>
                       <td className="px-5 py-3 text-ink-3 capitalize">{s.plan}</td>
@@ -416,6 +432,15 @@ export default async function DashboardPage({
                         <div className="flex gap-2 justify-end flex-wrap">
                           <Link href={`/dashboard?salon=${s.id}&tab=profile`} className="btn btn-outline btn-sm text-xs">✏️ Edit</Link>
                           {s.slug && <Link href={`/salon/${s.slug}`} target="_blank" className="btn btn-outline btn-sm text-xs">👁 View</Link>}
+                          {s.listing_status === 'approved' && (
+                            <ActionButton
+                              action={toggleSalonPublished.bind(null, s.id, !s.is_active)}
+                              className={`btn btn-sm text-xs ${s.is_active ? 'btn-outline text-rose border-rose/50' : 'btn-green'}`}
+                              confirmMessage={s.is_active ? `Unpublish "${s.name}"?` : undefined}
+                            >
+                              {s.is_active ? 'Unpublish' : 'Publish'}
+                            </ActionButton>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -488,6 +513,35 @@ export default async function DashboardPage({
                     <input name="website" className="input" type="url" defaultValue={salon.website || ''} placeholder="https://yoursalon.co.uk"/>
                   </div>
                 </div>
+
+                <p className="text-2xs font-bold uppercase tracking-wide text-ink-3 pt-2">Social Media <span className="font-normal normal-case text-ink-3">(optional — paste a link or just your handle)</span></p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Facebook</label>
+                    <input name="facebook" className="input" defaultValue={salon.facebook || ''} placeholder="facebook.com/yoursalon"/>
+                  </div>
+                  <div>
+                    <label className="label">Twitter / X</label>
+                    <input name="twitter" className="input" defaultValue={salon.twitter || ''} placeholder="x.com/yoursalon"/>
+                  </div>
+                  <div>
+                    <label className="label">YouTube</label>
+                    <input name="youtube" className="input" defaultValue={salon.youtube || ''} placeholder="youtube.com/@yoursalon"/>
+                  </div>
+                  <div>
+                    <label className="label">LinkedIn</label>
+                    <input name="linkedin" className="input" defaultValue={salon.linkedin || ''} placeholder="linkedin.com/company/yoursalon"/>
+                  </div>
+                  <div>
+                    <label className="label">WhatsApp</label>
+                    <input name="whatsapp" type="tel" className="input" defaultValue={salon.whatsapp || ''} placeholder="+44 7700 900000"/>
+                  </div>
+                  <div>
+                    <label className="label">Google Business</label>
+                    <input name="google_business" className="input" defaultValue={salon.google_business || ''} placeholder="g.page/yoursalon"/>
+                  </div>
+                </div>
+
                 <div>
                   <label className="label">Tags <span className="font-normal text-ink-3">(comma separated)</span></label>
                   <input name="tags" className="input" placeholder="e.g. 4C hair, knotless braids, melanin skin"
