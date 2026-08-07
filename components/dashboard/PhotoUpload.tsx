@@ -58,6 +58,17 @@ export default function PhotoUpload({ salonId, images: initialImages }: PhotoUpl
     if (inputRef.current) inputRef.current.value = ''
   }
 
+  async function setCover(url: string) {
+    try {
+      const res  = await fetch('/api/salon-photos', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ salon_id: salonId, url }) })
+      const data = await res.json()
+      if (data.images) { setImages(data.images); router.refresh(); setMsg('✅ Cover photo updated!'); setMsgType('success') }
+      else { setMsg(data.error || 'Could not update cover photo.'); setMsgType('error') }
+    } catch {
+      setMsg('Network error while updating cover photo.'); setMsgType('error')
+    }
+  }
+
   async function deletePhoto(url: string) {
     if (!confirm('Remove this photo?')) return
     try {
@@ -74,9 +85,17 @@ export default function PhotoUpload({ salonId, images: initialImages }: PhotoUpl
     <div>
       <p className="text-sm text-ink-3 mb-3">Photos increase bookings by 3×. Add at least 3 of your best work.</p>
       <div className="grid grid-cols-3 gap-3 mb-4">
-        {images.map(img => (
+        {images.map((img, i) => (
           <div key={img} className="relative aspect-square rounded-xl overflow-hidden border-2 border-bdr group">
             <Image src={img} alt="Salon photo" fill className="object-cover" />
+            {i === 0 ? (
+              <span className="absolute top-1.5 left-1.5 badge-pill bg-rose text-white text-3xs">★ Cover</span>
+            ) : (
+              <button onClick={() => setCover(img)}
+                className="absolute top-1.5 left-1.5 badge-pill bg-black/60 text-white text-3xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ink">
+                Set as Cover
+              </button>
+            )}
             <button onClick={() => deletePhoto(img)}
               className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-black/60 text-white rounded-md text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose">✕</button>
           </div>

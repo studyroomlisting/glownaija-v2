@@ -81,6 +81,9 @@ export async function addService(formData: FormData) {
     if (!priceInput || isNaN(priceValue) || priceValue <= 0) return { error: 'Please enter a valid price greater than £0.' }
     if (priceValue > 9999)                     return { error: 'Price seems too high — please check and try again.' }
 
+    const { data: dup } = await supabase.from('services').select('id').eq('salon_id', salon.id).ilike('name', name).eq('is_active', true).limit(1).single()
+    if (dup) return { error: `You already have a service called "${name}". Edit the existing one instead of adding a duplicate.` }
+
     const { count } = await supabase.from('services').select('*', { count: 'exact', head: true }).eq('salon_id', salon.id)
 
     const { error } = await supabase.from('services').insert({
