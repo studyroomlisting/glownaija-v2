@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import Testimonials from '@/components/layout/Testimonials'
+import NewsletterForm from '@/components/layout/NewsletterForm'
 
 export default async function AboutPage() {
   const supabase = await createClient()
@@ -122,10 +123,7 @@ export default async function AboutPage() {
             <p className="text-rose font-black text-xl mb-1">Join the Glow Community</p>
             <p className="text-ink-3 text-sm">Stay updated with beauty tips, exclusive offers, and the latest from GlowNaija.</p>
           </div>
-          <form onSubmit={e => e.preventDefault()} className="flex gap-2 w-full sm:w-auto">
-            <input type="email" required placeholder="Enter your email" className="input flex-1 sm:w-64 bg-white"/>
-            <button type="submit" className="btn btn-primary flex-shrink-0">Subscribe</button>
-          </form>
+          <NewsletterForm/>
         </div>
       </div>
     </div>

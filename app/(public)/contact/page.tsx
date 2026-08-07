@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import AccordionItem from '@/components/layout/AccordionItem'
+import NewsletterForm from '@/components/layout/NewsletterForm'
 
 const FAQS: [string, string][] = [
   ['How do I book a salon on GlowNaija?', 'Simply search for your preferred service or salon, choose a time that works for you, and confirm your booking in just a few clicks.'],
@@ -155,10 +156,7 @@ export default function ContactPage() {
             <p className="text-white font-black text-lg">✨ Stay in the Glow</p>
             <p className="text-white/70 text-sm">Subscribe to get beauty tips, offers and updates straight to your inbox.</p>
           </div>
-          <form onSubmit={e => e.preventDefault()} className="flex gap-2 w-full sm:w-auto">
-            <input type="email" required placeholder="Enter your email" className="input flex-1 sm:w-64 bg-white"/>
-            <button type="submit" className="btn bg-ink text-white hover:bg-ink/90 flex-shrink-0">Subscribe</button>
-          </form>
+          <NewsletterForm buttonClassName="btn bg-ink text-white hover:bg-ink/90 flex-shrink-0"/>
         </div>
       </div>
     </div>
