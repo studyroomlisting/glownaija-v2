@@ -2,11 +2,12 @@
 import { useState, useTransition } from 'react'
 import { saveSalon } from '@/lib/actions/salons'
 
-export default function SaveButton({ salonId, initialSaved, className }: { salonId: string; initialSaved: boolean; className?: string }) {
+export default function SaveButton({ salonId, initialSaved, className, iconOnly }: { salonId: string; initialSaved: boolean; className?: string; iconOnly?: boolean }) {
   const [saved, setSaved] = useState(initialSaved)
   const [pending, startTransition] = useTransition()
 
-  function handleClick() {
+  function handleClick(e: React.MouseEvent) {
+    if (iconOnly) { e.preventDefault(); e.stopPropagation() }
     startTransition(async () => {
       const result = await saveSalon(salonId)
       if (typeof result?.saved === 'boolean') setSaved(result.saved)
@@ -15,9 +16,9 @@ export default function SaveButton({ salonId, initialSaved, className }: { salon
   }
 
   return (
-    <button type="button" onClick={handleClick} disabled={pending}
+    <button type="button" onClick={handleClick} disabled={pending} aria-label={saved ? 'Remove from saved' : 'Save salon'}
       className={className || 'btn btn-outline btn-sm'}>
-      {saved ? '❤️ Saved' : '🤍 Save'}
+      {iconOnly ? (saved ? '❤️' : '🤍') : (saved ? '❤️ Saved' : '🤍 Save')}
     </button>
   )
 }

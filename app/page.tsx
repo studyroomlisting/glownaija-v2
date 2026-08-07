@@ -99,14 +99,12 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right: decorative visual (swap the gradient panel below for a real photo at
-                public/assets/images/hero-model.jpg whenever one is available) */}
+            {/* Right: hero photo */}
             <div className="hidden lg:flex justify-center relative">
               <div className="absolute w-[420px] h-[420px] rounded-full border border-rose/20"/>
               <div className="absolute w-[340px] h-[340px] rounded-full border border-gold/20"/>
-              <div className="relative w-[380px] h-[460px] rounded-[2rem] overflow-hidden shadow-2xl bg-gradient-to-br from-rose/30 via-purple-800 to-ink flex items-center justify-center">
-                <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(circle at 30% 20%, #E8607A 0%, transparent 55%), radial-gradient(circle at 75% 75%, #D4AF37 0%, transparent 50%)'}}/>
-                <span className="relative text-8xl">💇🏾‍♀️</span>
+              <div className="relative w-[380px] h-[460px] rounded-[2rem] overflow-hidden shadow-2xl">
+                <Image src="/assets/images/hero-salon.png" alt="Modern salon interior" fill priority quality={90} sizes="380px" className="object-cover"/>
               </div>
             </div>
           </div>
@@ -382,10 +380,10 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Decorative silhouette panel (swap for a real salon-owner photo when available) */}
+            {/* Salon owner photo */}
             <div className="hidden lg:flex justify-center">
-              <div className="w-72 h-72 rounded-full bg-white/10 flex items-center justify-center text-8xl">
-                💇🏾‍♀️
+              <div className="relative w-full max-w-md h-72 rounded-3xl overflow-hidden shadow-2xl">
+                <Image src="/assets/images/owners-salon.png" alt="Salon interior for owners" fill quality={90} sizes="400px" className="object-cover"/>
               </div>
             </div>
           </div>

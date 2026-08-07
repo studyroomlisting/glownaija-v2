@@ -1,6 +1,7 @@
 // @ts-nocheck
 export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
+import Image from 'next/image'
 import Testimonials from '@/components/layout/Testimonials'
 import NewsletterForm from '@/components/layout/NewsletterForm'
 
@@ -48,16 +49,9 @@ export default async function AboutPage() {
             </div>
           </div>
 
-          {/* Decorative image collage — swap for real photography when available */}
-          <div className="grid grid-cols-[1.4fr_1fr] gap-3 h-96">
-            <div className="rounded-3xl bg-gradient-to-br from-rose/20 via-page-2 to-gold/20 flex items-center justify-center text-7xl relative overflow-hidden">
-              <div className="absolute inset-0 opacity-50" style={{backgroundImage:'radial-gradient(circle at 30% 20%, #E8607A 0%, transparent 55%), radial-gradient(circle at 75% 75%, #D4AF37 0%, transparent 50%)'}}/>
-              <span className="relative">💇🏾‍♀️</span>
-            </div>
-            <div className="flex flex-col gap-3">
-              <div className="flex-1 rounded-3xl bg-gradient-to-br from-ink to-purple-900 flex items-center justify-center text-5xl">💈</div>
-              <div className="flex-1 rounded-3xl bg-gradient-to-br from-gold/20 to-rose-50 flex items-center justify-center text-5xl">🧴</div>
-            </div>
+          {/* Image collage */}
+          <div className="relative h-96 rounded-3xl overflow-hidden shadow-xl">
+            <Image src="/assets/images/about-collage.png" alt="GlowNaija — beauty, salons, and skincare" fill quality={90} sizes="600px" className="object-cover"/>
           </div>
         </div>
       </div>
