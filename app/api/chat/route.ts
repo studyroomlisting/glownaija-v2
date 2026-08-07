@@ -2,7 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+let client: Anthropic | null = null
+function getClient(): Anthropic {
+  if (!client) client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+  return client
+}
 
 // Rate limit: 20 req/min per IP
 const rateLimits = new Map<string, number[]>()
@@ -74,7 +78,7 @@ export async function POST(request: NextRequest) {
       systemPrompt += ` Located in: ${context.city}, UK.`
     }
 
-    const response = await client.messages.create({
+    const response = await getClient().messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 800,
       system: systemPrompt,

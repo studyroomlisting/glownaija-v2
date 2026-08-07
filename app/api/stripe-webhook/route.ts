@@ -4,7 +4,11 @@ import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/server'
 import { generateRef } from '@/lib/utils'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' })
+let stripe: Stripe | null = null
+function getStripe(): Stripe {
+  if (!stripe) stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' })
+  return stripe
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
@@ -12,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
+    event = getStripe().webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch (err: any) {
     return NextResponse.json({ error: `Webhook error: ${err.message}` }, { status: 400 })
   }

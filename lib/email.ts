@@ -1,7 +1,11 @@
 // @ts-nocheck
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let resend: Resend | null = null
+function getResend(): Resend {
+  if (!resend) resend = new Resend(process.env.RESEND_API_KEY)
+  return resend
+}
 const FROM   = process.env.EMAIL_FROM || 'GlowNaija <hello@glownaija.co.uk>'
 const APP    = process.env.NEXT_PUBLIC_APP_URL || 'https://glownaija.co.uk'
 
@@ -59,7 +63,7 @@ async function send(to: string, subject: string, html: string): Promise<boolean>
     return false
   }
   try {
-    const { error } = await resend.emails.send({ from: FROM, to, subject, html })
+    const { error } = await getResend().emails.send({ from: FROM, to, subject, html })
     if (error) { console.error('[EMAIL ERROR]', error); return false }
     return true
   } catch (e) {

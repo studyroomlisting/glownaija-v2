@@ -4,7 +4,11 @@ import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { fmtPrice, isValidUKPostcode, isValidName } from '@/lib/utils'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' })
+let stripe: Stripe | null = null
+function getStripe(): Stripe {
+  if (!stripe) stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' })
+  return stripe
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -41,7 +45,7 @@ export async function POST(request: NextRequest) {
   }))
   line_items.push({ price_data: { currency: 'gbp', product_data: { name: 'Delivery' }, unit_amount: delivery_cost }, quantity: 1 })
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     mode: 'payment',
     payment_method_types: ['card'],
     line_items,
