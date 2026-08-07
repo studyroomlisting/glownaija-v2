@@ -1,16 +1,21 @@
 // @ts-nocheck
 export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
 import Testimonials from '@/components/layout/Testimonials'
 
 export default async function AboutPage() {
   const supabase = await createClient()
-  const [{ count: salonCount }, { count: userCount }, { count: bookingCount }] = await Promise.all([
-    supabase.from('salons').select('*', { count: 'exact', head: true }).eq('is_active', true).eq('listing_status', 'approved'),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
-    supabase.from('bookings').select('*', { count: 'exact', head: true }),
-  ])
+  let salonCount = 0, userCount = 0, bookingCount = 0
+  try {
+    const [salonsRes, usersRes, bookingsRes] = await Promise.all([
+      supabase.from('salons').select('*', { count: 'exact', head: true }).eq('is_active', true).eq('listing_status', 'approved'),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }),
+      supabase.from('bookings').select('*', { count: 'exact', head: true }),
+    ])
+    salonCount   = salonsRes?.count   || 0
+    userCount    = usersRes?.count    || 0
+    bookingCount = bookingsRes?.count || 0
+  } catch { /* non-fatal — page still renders with fallback stats below */ }
 
   return (
     <div>

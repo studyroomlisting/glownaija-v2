@@ -7,7 +7,7 @@ import { signOut } from '@/lib/actions/auth'
 import type { Profile } from '@/types/database'
 import CartSidebar from '@/components/shop/CartSidebar'
 
-const NAV_LINKS: [string, string][] = [['/salons', 'Salons'], ['/shop', 'Shop'], ['/events', 'Events']]
+const NAV_LINKS: [string, string][] = [['/salons', 'Salons'], ['/shop', 'Shop'], ['/events', 'Events'], ['/about', 'About']]
 const GLOW_AI_LINKS: [string, string, string][] = [
   ['/chat', '💬', 'Chat with Glow AI'],
   ['/stylist', '✨', 'AI Stylist Quiz'],
@@ -220,7 +220,7 @@ export default function Header() {
       {/* Mobile nav */}
       {mobileOpen && (
         <div id="mobile-nav" className="md:hidden border-t border-bdr bg-white px-4 py-4 flex flex-col gap-1">
-          {[['/', 'Home'], ['/salons', 'Salons'], ['/shop', 'Shop'], ['/events', 'Events'], ['/chat', '💬 Chat with Glow AI'], ['/stylist', '✨ AI Stylist Quiz'], ['/wishlist', 'Wishlist']].map(([href, label]) => {
+          {[['/', 'Home'], ['/salons', 'Salons'], ['/shop', 'Shop'], ['/events', 'Events'], ['/about', 'About'], ['/chat', '💬 Chat with Glow AI'], ['/stylist', '✨ AI Stylist Quiz'], ['/wishlist', 'Wishlist']].map(([href, label]) => {
             const active = pathname === href
             return (
               <Link key={href} href={href}
