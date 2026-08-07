@@ -20,12 +20,13 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="w-full max-w-md">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-black mb-1">Forgot Password?</h1>
-        <p className="text-ink-3 text-sm">We'll send a reset link to your email</p>
+    <div className="w-full max-w-md text-center">
+      <div className="w-20 h-20 rounded-full bg-rose-50 border-4 border-white shadow-md flex items-center justify-center text-3xl mx-auto mb-6 relative">
+        🔐
+        <span className="absolute -top-1 -right-1 text-rose text-base">✨</span>
       </div>
-      <div className="card card-body">
+
+      <div className="card card-body text-left">
         {sent ? (
           <div className="text-center">
             <div className="text-6xl mb-4">📧</div>
@@ -37,18 +38,41 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <>
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-black mb-2">Forgot Password?</h1>
+              <p className="text-ink-3 text-sm">No worries! Enter your email address and we'll send you a link to reset your password.</p>
+            </div>
+
             {error && <div className="alert-error mb-4">{error}</div>}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="label">Email Address</label>
-                <input name="email" type="email" className="input" placeholder="you@example.com" required autoFocus />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-sm">✉️</span>
+                  <input name="email" type="email" className="input pl-10" placeholder="you@example.com" required autoFocus />
+                </div>
               </div>
-              <button type="submit" disabled={loading} className="btn btn-primary w-full justify-center">
+              <button type="submit" disabled={loading} className="btn btn-primary w-full justify-center py-3.5">
                 {loading ? 'Sending…' : 'Send Reset Link →'}
               </button>
             </form>
-            <p className="text-center text-sm text-ink-3 mt-4">
-              Remember it? <Link href="/auth/signin" className="text-rose font-bold">Sign in →</Link>
+
+            <div className="flex items-center gap-3 bg-rose-50 rounded-xl p-4 mt-5">
+              <span className="text-xl flex-shrink-0">🛡️</span>
+              <div>
+                <p className="text-sm font-bold">Secure &amp; Private</p>
+                <p className="text-xs text-ink-3">We'll never share your email with anyone.</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-px bg-bdr" /><span className="text-xs text-ink-3">or</span><div className="flex-1 h-px bg-bdr" />
+            </div>
+
+            <p className="text-center text-sm text-ink-3">
+              Remember your password?{' '}
+              <Link href="/auth/signin" className="text-rose font-bold">Sign in →</Link>
             </p>
           </>
         )}

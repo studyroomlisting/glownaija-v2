@@ -12,6 +12,8 @@ export default function SignUpPage() {
   const [pwd,     setPwd]     = useState('')
   const [conf,    setConf]    = useState('')
   const [agreed,  setAgreed]  = useState(false)
+  const [showPwd, setShowPwd] = useState(false)
+  const [showConf, setShowConf] = useState(false)
 
   const strength = (() => {
     let s = 0
@@ -42,9 +44,10 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-md relative">
+      <span className="absolute -top-2 right-6 text-rose text-xl">✨</span>
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-black mb-1">Create your account</h1>
+        <h1 className="text-2xl md:text-3xl font-black mb-1">Create your account</h1>
         <p className="text-ink-3 text-sm">Free to join · No credit card needed</p>
       </div>
       <div className="card card-body">
@@ -54,8 +57,11 @@ export default function SignUpPage() {
         <div className="grid grid-cols-2 gap-3 mb-4">
           {(['customer','owner'] as const).map(r => (
             <button key={r} type="button" onClick={() => setRole(r)}
-              className={`border-2 rounded-xl p-3 text-left transition-all ${role===r ? 'border-rose bg-rose-50' : 'border-bdr hover:border-rose/50'}`}>
-              <div className="text-2xl mb-1">{r==='customer' ? '🛍️' : '🏪'}</div>
+              className={`relative border-2 rounded-xl p-3 text-left transition-all ${role===r ? 'border-rose bg-rose-50' : 'border-bdr hover:border-rose/50'}`}>
+              {role===r && <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-rose text-white text-3xs flex items-center justify-center">✓</span>}
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-base mb-2 ${r==='customer' ? 'bg-rose-100' : 'bg-purple-100'}`}>
+                {r==='customer' ? '🛍️' : '🏪'}
+              </div>
               <div className="text-sm font-bold">{r==='customer' ? 'Customer' : 'Salon Owner'}</div>
               <div className="text-xs text-ink-3">{r==='customer' ? 'Book salons & shop' : 'List my business'}</div>
             </button>
@@ -76,13 +82,35 @@ export default function SignUpPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input type="hidden" name="role" value={role} />
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">First Name *</label><input name="first_name" type="text" className="input" placeholder="Amara" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required /></div>
-            <div><label className="label">Last Name *</label><input name="last_name" type="text" className="input" placeholder="Okafor" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required /></div>
+            <div>
+              <label className="label">First Name *</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-sm">👤</span>
+                <input name="first_name" type="text" className="input pl-9" placeholder="Amara" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required />
+              </div>
+            </div>
+            <div>
+              <label className="label">Last Name *</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-sm">👤</span>
+                <input name="last_name" type="text" className="input pl-9" placeholder="Okafor" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required />
+              </div>
+            </div>
           </div>
-          <div><label className="label">Email Address *</label><input name="email" type="email" className="input" placeholder="you@example.com" required /></div>
+          <div>
+            <label className="label">Email Address *</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-sm">✉️</span>
+              <input name="email" type="email" className="input pl-9" placeholder="you@example.com" required />
+            </div>
+          </div>
           <div>
             <label className="label">Password * <span className="font-normal text-ink-3">(min 8 chars)</span></label>
-            <input name="password" type="password" className="input" placeholder="Choose a strong password" required value={pwd} onChange={e=>setPwd(e.target.value)} />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-sm">🔒</span>
+              <input name="password" type={showPwd ? 'text' : 'password'} className="input pl-9 pr-11" placeholder="Choose a strong password" required value={pwd} onChange={e=>setPwd(e.target.value)} minLength={8} />
+              <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 text-base">{showPwd ? '🙈' : '👁'}</button>
+            </div>
             {pwd && (
               <div className="mt-1.5">
                 <div className="h-1 bg-page-2 rounded-full overflow-hidden"><div style={{ width:`${strength*20}%`, background:strengthColors[strength] }} className="h-full rounded-full transition-all" /></div>
@@ -92,7 +120,11 @@ export default function SignUpPage() {
           </div>
           <div>
             <label className="label">Confirm Password *</label>
-            <input name="confirm" type="password" className="input" placeholder="Repeat your password" required value={conf} onChange={e=>setConf(e.target.value)} />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-sm">🔒</span>
+              <input name="confirm" type={showConf ? 'text' : 'password'} className="input pl-9 pr-11" placeholder="Repeat your password" required value={conf} onChange={e=>setConf(e.target.value)} />
+              <button type="button" onClick={() => setShowConf(!showConf)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 text-base">{showConf ? '🙈' : '👁'}</button>
+            </div>
             {conf && <p className={`text-xs mt-1 ${pwd===conf?'text-gn':'text-rose'}`}>{pwd===conf?'✓ Passwords match':'✗ Passwords do not match'}</p>}
           </div>
           <label className="flex items-start gap-2.5 cursor-pointer">
@@ -113,6 +145,12 @@ export default function SignUpPage() {
           Already have an account?{' '}
           <Link href="/auth/signin" className="text-rose font-bold">Sign in →</Link>
         </p>
+      </div>
+
+      <div className="flex justify-center gap-6 mt-5 text-2xs text-ink-3">
+        <span className="flex items-center gap-1">🛡️ Secure &amp; trusted</span>
+        <span className="flex items-center gap-1">🎉 Join thousands</span>
+        <span className="flex items-center gap-1">🎧 24/7 support</span>
       </div>
     </div>
   )

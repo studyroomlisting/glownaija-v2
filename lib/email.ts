@@ -238,6 +238,24 @@ export async function sendBookingStatusUpdate(opts: {
 }
 
 // ── 7. ENQUIRY NOTIFICATION (to salon owner) ─────────────────────────────────
+// ── Contact form ──────────────────────────────────────────────────────────────
+export async function sendContactMessage(opts: {
+  name: string; email: string; subject: string; message: string
+}) {
+  const { name, email, subject, message } = opts
+  const html = base(`
+    ${h2('New Contact Message ✉️')}
+    ${box(`
+      ${row('From',    name)}
+      ${row('Email',   `<a href="mailto:${email}" style="color:#E8607A">${email}</a>`)}
+      ${row('Subject', subject || 'General Enquiry')}
+    `)}
+    ${box(`<p style="font-size:13px;color:#3D2B1A;margin:0;line-height:1.7;white-space:pre-wrap">${message}</p>`, '#FFF9F5')}
+    ${btn(`Reply to ${name}`, `mailto:${email}?subject=Re: ${encodeURIComponent(subject || 'Your message to GlowNaija')}`)}
+  `)
+  return send('hello@glownaija.co.uk', `✉️ Contact Form — ${subject || 'General Enquiry'}`, html)
+}
+
 export async function sendEnquiryNotification(opts: {
   ownerEmail: string; salonName: string; senderName: string
   senderEmail: string; senderPhone?: string; subject?: string; message: string
