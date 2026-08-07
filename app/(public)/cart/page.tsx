@@ -1,12 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useCart } from '@/hooks/useCart'
+import { useCart, FREE_DELIVERY_THRESHOLD, calcDelivery } from '@/hooks/useCart'
 import { fmtPrice } from '@/lib/utils'
 import CartItem from '@/components/shop/CartItem'
-
-const DELIVERY = 299 // £2.99 flat rate
-const FREE_DELIVERY_THRESHOLD = 5000 // free over £50
 
 export default function CartPage() {
   const { items, count, total, clearCart } = useCart()
@@ -30,7 +27,7 @@ export default function CartPage() {
 
   if (!mounted) return null // prevent SSR mismatch
 
-  const deliveryCost   = total >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY
+  const deliveryCost   = calcDelivery(total)
   const discount       = couponData?.discount_pence || 0
   const orderTotal     = Math.max(0, total + deliveryCost - discount)
   const toFreeDelivery = Math.max(0, FREE_DELIVERY_THRESHOLD - total)

@@ -2,11 +2,8 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useCart } from '@/hooks/useCart'
+import { useCart, calcDelivery } from '@/hooks/useCart'
 import { fmtPrice, isValidUKPostcode, isValidName } from '@/lib/utils'
-
-const DELIVERY = 299
-const FREE_DELIVERY_THRESHOLD = 5000
 
 export default function CheckoutPage() {
   const { items, total, count, clearCart } = useCart()
@@ -29,7 +26,7 @@ export default function CheckoutPage() {
     }
   }, [])
 
-  const deliveryCost = total >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY
+  const deliveryCost = calcDelivery(total)
   const discount     = coupon?.discount_pence || 0
   const orderTotal   = Math.max(0, total + deliveryCost - discount)
 
