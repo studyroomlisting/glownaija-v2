@@ -8,11 +8,13 @@ import UserRow   from '@/components/admin/UserRow'
 import ReviewRow from '@/components/admin/ReviewRow'
 import OrderRow  from '@/components/admin/OrderRow'
 import AuditRow  from '@/components/admin/AuditRow'
+import ProductForm from '@/components/admin/ProductForm'
+import ProductRow  from '@/components/admin/ProductRow'
 import StatsCard from '@/components/dashboard/StatsCard'
 import DashboardSidebar from '@/components/layout/DashboardSidebar'
 import { expireStaleBookings } from '@/lib/bookings-expiry'
 
-export default async function AdminPage({ searchParams }: { searchParams: { tab?: string; status?: string } }) {
+export default async function AdminPage({ searchParams }: { searchParams: { tab?: string; status?: string; edit?: string } }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
@@ -30,12 +32,14 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
     { count: bookings_count },
     { count: orders_count },
     { count: pending_count },
+    { count: products_count },
   ] = await Promise.all([
     supabase.from('salons').select('*', { count: 'exact', head: true }).eq('is_active', true),
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('bookings').select('*', { count: 'exact', head: true }).gte('booking_date', new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]),
     supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString()),
     supabase.from('salons').select('*', { count: 'exact', head: true }).eq('listing_status', 'pending'),
+    supabase.from('products').select('*', { count: 'exact', head: true }),
   ])
 
   let salonsQuery = supabase.from('salons').select('*').order('created_at', { ascending: false }).limit(30)
@@ -46,6 +50,10 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
   const { data: orders }   = await supabase.from('orders').select('*,profiles(first_name,last_name,email)').order('created_at', { ascending: false }).limit(30)
   const { data: reviews }  = await supabase.from('reviews').select('*,profiles(first_name,last_name),salons(name)').order('created_at', { ascending: false }).limit(30)
   const { data: audit }    = await supabase.from('audit_logs').select('*,profiles(first_name,last_name)').order('created_at', { ascending: false }).limit(50)
+  const { data: products } = await supabase.from('products').select('*').order('created_at', { ascending: false }).limit(50)
+  const { data: editingProduct } = searchParams.edit
+    ? await supabase.from('products').select('*').eq('id', searchParams.edit).single()
+    : { data: null }
 
   // Ban status lives on auth.users (not the profiles table), so pull it separately
   // via the admin client and merge it into the user rows.
@@ -64,6 +72,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'salons',   label: 'Salons',   icon: '🏪', badge: pending_count || undefined },
     { id: 'users',    label: 'Users',    icon: '👥', badge: users_count || undefined },
+    { id: 'products', label: 'Products', icon: '🧴', badge: products_count || undefined },
     { id: 'bookings', label: 'Bookings', icon: '📅' },
     { id: 'orders',   label: 'Orders',   icon: '🛍️' },
     { id: 'reviews',  label: 'Reviews',  icon: '⭐' },
@@ -108,6 +117,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
               <div className="flex gap-2 flex-wrap">
                 <Link href="/admin?tab=salons" className="btn btn-outline btn-sm text-xs">🏪 Manage Salons</Link>
                 <Link href="/admin?tab=users" className="btn btn-outline btn-sm text-xs">👥 Manage Users</Link>
+                <Link href="/admin?tab=products" className="btn btn-outline btn-sm text-xs">🧴 Manage Products</Link>
                 <Link href="/admin?tab=reviews" className="btn btn-outline btn-sm text-xs">⭐ Moderate Reviews</Link>
                 <Link href="/admin?tab=orders" className="btn btn-outline btn-sm text-xs">🛍️ Manage Orders</Link>
                 <Link href="/admin?tab=audit" className="btn btn-outline btn-sm text-xs">📜 Audit Log</Link>
@@ -137,6 +147,28 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
             {!users?.length
               ? <div className="text-center py-12 text-ink-3">No users yet</div>
               : users.map(u => <UserRow key={u.id} profile={{ ...u, banned: bannedIds.has(u.id) }} isSelf={u.id === user.id} />)}
+          </div>
+        )}
+
+        {tab === 'products' && (
+          <div className="grid-2 items-start">
+            <div className="card card-body">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-bold text-lg">{editingProduct ? `Edit "${editingProduct.name}"` : 'Add New Product'}</h2>
+                {editingProduct && <Link href="/admin?tab=products" className="text-xs text-rose font-bold">+ Add new instead</Link>}
+              </div>
+              <ProductForm product={editingProduct} />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg mb-3">All Products ({products?.length || 0})</h2>
+              {!products?.length ? (
+                <div className="text-center py-12 text-ink-3">No products yet — add your first one.</div>
+              ) : (
+                <div className="space-y-3">
+                  {products.map(p => <ProductRow key={p.id} product={p} />)}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

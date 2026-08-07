@@ -29,7 +29,8 @@ export async function saveProduct(formData: FormData) {
   const badge        = (formData.get('badge')       as string || '').trim() || null
   const badge_type   = (formData.get('badge_type')  as string || '').trim() || null
   const tags_raw     = (formData.get('tags')        as string || '').split(',').map(t => t.trim()).filter(Boolean)
-  const is_active    = formData.get('is_active') !== 'false'
+  const images_raw   = (formData.get('images')      as string || '').split(',').map(i => i.trim()).filter(Boolean)
+  const is_active    = formData.get('is_active') === 'true'
 
   if (!name)   return { error: 'Product name is required.' }
   if (!brand)  return { error: 'Brand is required.' }
@@ -43,6 +44,7 @@ export async function saveProduct(formData: FormData) {
     price,
     original_price: orig_price,
     stock_count,
+    images: images_raw,
     badge, badge_type,
     tags: tags_raw,
     is_active,
