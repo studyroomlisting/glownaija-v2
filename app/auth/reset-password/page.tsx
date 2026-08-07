@@ -1,7 +1,8 @@
 'use client'
 // @ts-nocheck
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { updatePassword } from '@/lib/actions/auth'
+import { createClient } from '@/lib/supabase/client'
 
 export default function ResetPasswordPage() {
   const [pwd,    setPwd]    = useState('')
@@ -9,6 +10,42 @@ export default function ResetPasswordPage() {
   const [error,  setError]  = useState('')
   const [loading,setLoading]= useState(false)
   const [done,   setDone]   = useState(false)
+  const [checking, setChecking] = useState(true)
+  const [validLink, setValidLink] = useState(false)
+
+  // The reset link's recovery token lives in the URL (hash fragment or ?code=) and is
+  // never sent to the server automatically. It must be exchanged for a session by the
+  // browser client before the password can be updated — this step was missing entirely,
+  // so submitting this form previously had no valid session to act on.
+  useEffect(() => {
+    const supabase = createClient()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
+        setValidLink(true)
+        setChecking(false)
+      }
+    })
+
+    // PKCE flow: a ?code= param needs an explicit exchange.
+    const code = new URLSearchParams(window.location.search).get('code')
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (data?.session) { setValidLink(true) }
+        setChecking(false)
+      })
+    } else {
+      // Implicit flow: detectSessionInUrl (on by default) processes the #access_token
+      // hash automatically when the client is created above; give it a moment, then
+      // check whether a session actually resulted.
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session) setValidLink(true)
+        setChecking(false)
+      })
+    }
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const strength = (() => {
     let s = 0
@@ -29,6 +66,26 @@ export default function ResetPasswordPage() {
     if (res?.error) { setError(res.error); setLoading(false) }
     else setDone(true)
   }
+
+  if (checking) return (
+    <div className="w-full max-w-md">
+      <div className="card card-body text-center py-12">
+        <div className="w-8 h-8 border-4 border-rose border-t-transparent rounded-full animate-spin mx-auto mb-4"/>
+        <p className="text-ink-3 text-sm">Verifying your reset link…</p>
+      </div>
+    </div>
+  )
+
+  if (!validLink) return (
+    <div className="w-full max-w-md">
+      <div className="card card-body text-center py-12">
+        <div className="text-6xl mb-4">⚠️</div>
+        <h2 className="font-black text-xl mb-2">Link Invalid or Expired</h2>
+        <p className="text-ink-3 text-sm mb-6">This password reset link is no longer valid. Reset links expire after 1 hour and can only be used once.</p>
+        <a href="/auth/forgot-password" className="btn btn-primary w-full justify-center">Request a New Link →</a>
+      </div>
+    </div>
+  )
 
   if (done) return (
     <div className="w-full max-w-md">

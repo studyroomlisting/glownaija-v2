@@ -17,6 +17,9 @@ export async function signUp(formData: FormData) {
   if (!isValidName(first_name) || !isValidName(last_name)) return { error: 'Names should only contain letters.' }
   if (!isValidEmail(email))       return { error: 'Invalid email address.' }
   if (password.length < 8)        return { error: 'Password must be at least 8 characters.' }
+  if (password.length > 72)       return { error: 'Password must be under 72 characters.' }
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password))
+    return { error: 'Password must contain at least one letter and one number.' }
 
   const { error } = await supabase.auth.signUp({
     email, password,
@@ -78,6 +81,9 @@ export async function updatePassword(formData: FormData) {
   const confirmPwd = formData.get('confirm_password') as string
 
   if (password.length < 8)   return { error: 'Password must be at least 8 characters.' }
+  if (password.length > 72)  return { error: 'Password must be under 72 characters.' }
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password))
+    return { error: 'Password must contain at least one letter and one number.' }
   if (password !== confirmPwd) return { error: 'Passwords do not match.' }
 
   const { error } = await supabase.auth.updateUser({ password })
