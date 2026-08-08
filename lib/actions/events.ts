@@ -22,6 +22,7 @@ export async function createEvent(formData: FormData) {
   const desc       = (formData.get('description') as string || '').trim()
   const emoji      = (formData.get('emoji')       as string) || '🎉'
   const event_type = (formData.get('event_type')  as string) || 'workshop'
+  const image_url  = (formData.get('image_url')   as string || '').trim() || null
 
   // Validation
   if (!title || title.length < 3)
@@ -36,13 +37,18 @@ export async function createEvent(formData: FormData) {
     return { error: 'Venue is required.' }
   if (!city)
     return { error: 'City is required.' }
-  if (capacity < 1 || capacity > 10000)
-    return { error: 'Capacity must be between 1 and 10,000.' }
+  if (isNaN(price) || price < 0)
+    return { error: 'Price cannot be negative.' }
+  if (price > 100000000) // £1,000,000 sanity ceiling
+    return { error: 'Price is too high.' }
+  if (isNaN(capacity) || capacity < 1 || capacity > 10000)
+    return { error: 'Capacity must be a positive number between 1 and 10,000.' }
 
   const { data: event, error } = await supabase.from('events').insert({
     organiser_id: user.id, title, emoji, description: desc || null,
     event_type, event_date: date, time_start, time_end,
     venue, city, price, is_free, capacity, is_active: true,
+    image_url,
   }).select().single()
 
   if (error || !event) return { error: 'Could not create event. Please try again.' }

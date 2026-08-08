@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createEvent } from '@/lib/actions/events'
 import PageHero from '@/components/layout/PageHero'
 import ActionForm from '@/components/dashboard/ActionForm'
+import EventImageUpload from '@/components/events/EventImageUpload'
 import { ukDateString } from '@/lib/utils'
 
 export default async function CreateEventPage() {
@@ -29,6 +30,7 @@ export default async function CreateEventPage() {
               <label className="label">Description</label>
               <textarea name="description" className="input" rows={3} maxLength={1000}/>
             </div>
+            <EventImageUpload/>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="label">Event Type</label>
