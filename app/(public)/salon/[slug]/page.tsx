@@ -1,285 +1,355 @@
 // @ts-nocheck
 export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
-import Image from 'next/image'
-import SalonCard from '@/components/salon/SalonCard'
+import { notFound }     from 'next/navigation'
+import Link             from 'next/link'
+import Image            from 'next/image'
+import type { Metadata } from 'next'
+import Breadcrumb  from '@/components/layout/Breadcrumb'
+import ServiceRow  from '@/components/salon/ServiceRow'
+import ReviewCard  from '@/components/salon/ReviewCard'
+import SaveButton  from '@/components/salon/SaveButton'
+import ReviewForm  from '@/components/salon/ReviewForm'
+import Gallery      from '@/components/salon/Gallery'
 import { fmtPrice } from '@/lib/utils'
+import { submitEnquiry } from '@/lib/actions/salons'
 
-interface SalonsSearchParams {
-  city?: string; service?: string; search?: string
-  price_min?: string; price_max?: string
-  sort?: string; view?: string
-  verified?: string; open?: string; featured?: string
-  page?: string
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const supabase = await createClient()
+  const { data: salon } = await supabase.from('salons').select('name,description,area,city').eq('slug', params.slug).single()
+  if (!salon) return { title: 'Salon Not Found' }
+  return {
+    title: `${salon.name} — ${salon.area}, ${salon.city}`,
+    description: salon.description?.substring(0, 160) || `Book ${salon.name} in ${salon.area}, ${salon.city} on GlowNaija`,
+  }
 }
 
-export default async function SalonsPage({ searchParams }: { searchParams: SalonsSearchParams }) {
+export default async function SalonPage({ params }: { params: { slug: string } }) {
   const supabase = await createClient()
-  const page = parseInt(searchParams.page || '1')
-  const per  = 6
-  const sort = searchParams.sort || 'rating'
-  const view = searchParams.view === 'list' ? 'list' : 'grid'
 
-  let query = supabase.from('salons').select('*', { count: 'exact' })
-    .eq('listing_status', 'approved').eq('is_active', true)
+  const { data: salon } = await supabase.from('salons').select('*').eq('slug', params.slug).single()
+  if (!salon) notFound()
 
-  if (searchParams.city)       query = query.eq('city', searchParams.city)
-  if (searchParams.service)    query = query.contains('service_types', [searchParams.service])
-  if (searchParams.search) {
-    const term = searchParams.search.trim()
-    // Also match salons that offer a service whose name contains the search term
-    // (e.g. searching "knotless braids" should find the salon even if neither its
-    // name nor area literally contains those words).
-    const { data: matchingServices } = await supabase.from('services').select('salon_id').ilike('name', `%${term}%`)
-    const serviceSalonIds = [...new Set((matchingServices || []).map(s => s.salon_id))]
-    if (serviceSalonIds.length) {
-      query = query.or(`name.ilike.%${term}%,area.ilike.%${term}%,id.in.(${serviceSalonIds.join(',')})`)
-    } else {
-      query = query.or(`name.ilike.%${term}%,area.ilike.%${term}%`)
+  const { data: { user: viewer } } = await supabase.auth.getUser()
+  if (salon.listing_status !== 'approved' || !salon.is_active) {
+    let allowed = false
+    if (viewer) {
+      if (viewer.id === salon.owner_id) allowed = true
+      else {
+        const { data: viewerProfile } = await supabase.from('profiles').select('is_admin').eq('id', viewer.id).single()
+        if (viewerProfile?.is_admin) allowed = true
+      }
     }
-  }
-  if (searchParams.price_min)  query = query.gte('price_from', parseInt(searchParams.price_min))
-  if (searchParams.price_max)  query = query.lte('price_from', parseInt(searchParams.price_max))
-  if (searchParams.verified === '1') query = query.eq('is_verified', true)
-  if (searchParams.open === '1')     query = query.eq('is_open', true)
-  if (searchParams.featured === '1') query = query.eq('is_featured', true)
-
-  if (sort === 'price_low')       query = query.order('price_from', { ascending: true })
-  else if (sort === 'price_high') query = query.order('price_from', { ascending: false })
-  else if (sort === 'newest')     query = query.order('created_at', { ascending: false })
-  else                             query = query.order('is_featured', { ascending: false }).order('rating', { ascending: false })
-
-  query = query.range((page - 1) * per, page * per - 1)
-
-  const { data: salons, count } = await query
-  const total = count || 0
-  const totalPages = Math.max(1, Math.ceil(total / per))
-
-  const cities = ['London','Birmingham','Manchester','Leeds','Bristol','Sheffield','Nottingham','Leicester','Liverpool','Newcastle','Glasgow','Edinburgh','Cardiff']
-  const serviceTypes = [
-    { slug: 'braids',   label: 'Braids' },
-    { slug: 'locs',     label: 'Locs' },
-    { slug: 'wigs',     label: 'Wigs' },
-    { slug: 'nails',    label: 'Nails' },
-    { slug: 'makeup',   label: 'Makeup' },
-    { slug: 'skincare', label: 'Skincare' },
-    { slug: 'colour',   label: 'Barber' },
-    { slug: 'natural',  label: 'Natural Hair' },
-  ]
-
-  // Preserves every active filter while overriding only what's passed in — used by
-  // sort links, the view toggle, quick-filter pills, and pagination so switching one
-  // control never resets the others.
-  function buildUrl(overrides: Record<string, string | undefined>) {
-    const merged = {
-      city: searchParams.city, service: searchParams.service, search: searchParams.search,
-      price_min: searchParams.price_min, price_max: searchParams.price_max,
-      sort: searchParams.sort, view: searchParams.view,
-      verified: searchParams.verified, open: searchParams.open, featured: searchParams.featured,
-      page: searchParams.page,
-      ...overrides,
-    }
-    const params = new URLSearchParams()
-    Object.entries(merged).forEach(([k, v]) => { if (v) params.set(k, v) })
-    const qs = params.toString()
-    return `/salons${qs ? `?${qs}` : ''}`
+    if (!allowed) notFound()
   }
 
-  const heading = searchParams.featured === '1'
-    ? 'Featured Salons'
-    : searchParams.city ? `Salons in ${searchParams.city}` : 'All Salons'
+  const [
+    { data: services },
+    { data: hours },
+    { data: reviews },
+    { data: owner },
+    { data: similar },
+  ] = await Promise.all([
+    supabase.from('services').select('*').eq('salon_id', salon.id).eq('is_active', true).order('sort_order'),
+    supabase.from('salon_opening_hours').select('*').eq('salon_id', salon.id).order('day_of_week'),
+    supabase.from('reviews').select('*, profiles(first_name,last_name)').eq('salon_id', salon.id).order('created_at', { ascending: false }).limit(15),
+    supabase.from('profiles').select('first_name,last_name,avatar_url,email').eq('id', salon.owner_id).single(),
+    supabase.from('salons').select('*').eq('city', salon.city).eq('listing_status','approved').eq('is_active', true).neq('id', salon.id).order('rating', { ascending: false }).limit(3),
+  ])
 
-  // Pagination window: show a handful of page numbers around the current page,
-  // not every page (important now that filters can produce many pages).
-  const pageWindow = 2
-  const pageNumbers: number[] = []
-  for (let p = Math.max(1, page - pageWindow); p <= Math.min(totalPages, page + pageWindow); p++) pageNumbers.push(p)
+  const isSaved = viewer
+    ? !!(await supabase.from('saved_salons').select('id').eq('user_id', viewer.id).eq('salon_id', salon.id).single()).data
+    : false
+
+  const today = new Date().getDay()
+  const days  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+  const svcGroups = (services || []).reduce((acc: any, s: any) => {
+    acc[s.category] = acc[s.category] || []
+    acc[s.category].push(s)
+    return acc
+  }, {})
+  const cheapest = services?.length ? Math.min(...services.map(s => s.price)) : salon.price_from * 100
+  const todayHours = hours?.find(h => h.day_of_week === today)
+  const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${salon.name} ${salon.address || ''} ${salon.area} ${salon.city}`)}`
 
   return (
-    <div className="container py-8">
+    <div>
+      {(salon.listing_status !== 'approved' || !salon.is_active) && (
+        <div className="bg-gold/10 border-b border-gold/30 py-2.5 text-center text-xs font-bold text-gold">
+          ⏳ This listing is pending admin approval and is not visible to the public yet.
+        </div>
+      )}
+      <Breadcrumb crumbs={[
+        { label: 'Home',   href: '/' },
+        { label: 'Salons', href: '/salons' },
+        { label: salon.city, href: `/location/${salon.city.toLowerCase()}` },
+        { label: salon.name },
+      ]}/>
 
-      {/* Breadcrumb */}
-      <div className="text-xs text-ink-3 mb-3">
-        <Link href="/" className="hover:text-rose">Home</Link> / <span className="text-ink-2 font-medium">Salons</span>
+      {/* Image banner — full width, edge to edge */}
+      <div className="relative h-56 sm:h-72 md:h-96 w-full overflow-hidden bg-gradient-to-br from-ink to-purple-900">
+        {salon.images?.[0] ? (
+          <Image src={salon.images[0]} alt={salon.name} fill priority quality={90} sizes="100vw" className="object-cover"/>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-7xl">{salon.emoji}</div>
+        )}
+        {(salon.images?.length || 0) > 1 && (
+          <a href="#gallery" className="absolute top-4 left-4 badge-pill bg-white/90 text-ink text-xs font-bold flex items-center gap-1.5">
+            🎞 View all {salon.images.length} photos
+          </a>
+        )}
       </div>
 
-      {/* Title row */}
-      <div className="flex items-center gap-3 flex-wrap mb-1">
-        <h1 className="text-2xl md:text-3xl font-black">{heading}</h1>
-        <span className="badge-pill bg-page-2 text-ink-3 text-xs">{total} Listed found</span>
+      {/* Info card — floats up over the image */}
+      <div className="container relative z-10 -mt-16 mb-3">
+        <div className="card card-body shadow-xl">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-4 min-w-0">
+              <div className="w-16 h-16 rounded-2xl bg-page-2 flex items-center justify-center text-3xl flex-shrink-0 border-4 border-white shadow-md -mt-1">
+                {salon.emoji}
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-2xl md:text-3xl font-black">{salon.name}</h1>
+                <p className="text-ink-3 text-sm mt-1">📍 {salon.area}, {salon.city}{salon.postcode ? `, ${salon.postcode}` : ''}</p>
+              </div>
+            </div>
+            <span className="badge-pill bg-gold/15 text-gold text-sm font-bold flex-shrink-0">★ {salon.rating || '—'} ({salon.review_count} reviews)</span>
+          </div>
+
+          <div className="flex gap-2 mt-4 flex-wrap items-center">
+            <span className={`badge-pill text-xs font-bold ${salon.is_open ? 'bg-green-100 text-gn' : 'bg-rose-100 text-rose'}`}>● {salon.is_open ? 'Open Now' : 'Closed Now'}</span>
+            {salon.is_verified && <span className="badge-pill bg-green-100 text-gn text-xs">✓ Verified</span>}
+            {(services?.length || 0) > 0 && <span className="text-xs text-ink-3 flex items-center gap-1">📋 {services.length} Service{services.length !== 1 ? 's' : ''}</span>}
+            {salon.accepts_online_bookings && <span className="text-xs text-ink-3 flex items-center gap-1">📅 Online Booking</span>}
+          </div>
+
+          <div className="flex gap-2 flex-wrap mt-4 pt-4 border-t border-bdr">
+            {salon.phone && <a href={`tel:${salon.phone}`} className="btn btn-outline btn-sm text-xs">📞 Call</a>}
+            <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm text-xs">🧭 Directions</a>
+            {salon.website && <a href={salon.website} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm text-xs">🌐 Website</a>}
+          </div>
+        </div>
       </div>
-      <p className="text-ink-3 text-sm mb-6">Verified salons, real reviews &amp; transparent prices</p>
 
-      {/* Search bar */}
-      <form action="/salons" method="get" className="card card-body flex flex-wrap gap-3 items-end mb-4">
-        <div className="flex-1 min-w-[200px]">
-          <label className="label">Search</label>
-          <input name="search" defaultValue={searchParams.search || ''} className="input" placeholder="Search salon, area, service…"/>
+      {/* Save / Share + section nav */}
+      <div className="container pb-5 border-b border-bdr">
+        <div className="flex gap-2 flex-wrap">
+          <SaveButton salonId={salon.id} initialSaved={isSaved} className="btn btn-outline btn-sm text-xs"/>
+          <a href={`mailto:?subject=${encodeURIComponent(salon.name)}&body=${encodeURIComponent(`Check out ${salon.name} on GlowNaija`)}`}
+            className="btn btn-outline btn-sm text-xs">🔗 Share</a>
         </div>
-        <div className="w-28">
-          <label className="label">Min £</label>
-          <input name="price_min" type="number" min="0" defaultValue={searchParams.price_min || ''} className="input" placeholder="0"/>
-        </div>
-        <div className="w-28">
-          <label className="label">Max £</label>
-          <input name="price_max" type="number" min="0" defaultValue={searchParams.price_max || ''} className="input" placeholder="Any"/>
-        </div>
-        <div className="w-40">
-          <label className="label">City</label>
-          <select name="city" defaultValue={searchParams.city || ''} className="input">
-            <option value="">All Cities</option>
-            {cities.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        <div className="w-44">
-          <label className="label">Service Type</label>
-          <select name="service" defaultValue={searchParams.service || ''} className="input">
-            <option value="">Any Service</option>
-            {serviceTypes.map(s => <option key={s.slug} value={s.slug}>{s.label}</option>)}
-          </select>
-        </div>
-        {/* Preserve sort/view when a new search is submitted */}
-        {searchParams.sort && <input type="hidden" name="sort" value={searchParams.sort}/>}
-        {searchParams.view && <input type="hidden" name="view" value={searchParams.view}/>}
-        {searchParams.featured && <input type="hidden" name="featured" value={searchParams.featured}/>}
-        <button type="submit" className="btn btn-primary">Search</button>
-      </form>
 
-      {/* Sort + quick filters + view toggle */}
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-bold text-ink-3 uppercase tracking-wide mr-1">Sort:</span>
-          {[
-            ['rating', 'Top Rated'],
-            ['price_low', 'Price: Low to High'],
-            ['price_high', 'Price: High to Low'],
-            ['newest', 'Newest'],
-          ].map(([val, label]) => (
-            <Link key={val} href={buildUrl({ sort: val === 'rating' ? undefined : val, page: undefined })}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${sort === val ? 'bg-ink text-white' : 'bg-page-2 text-ink-3 hover:bg-page'}`}>
-              {label}
-            </Link>
+        {/* Section nav */}
+        <div className="flex gap-1 flex-wrap mt-4 pt-3 border-t border-bdr">
+          {[['about','About'],['pricing','Pricing'],['gallery','Gallery'],['reviews','Reviews'],['location','Location']].map(([id,label]) => (
+            <a key={id} href={`#${id}`} className="px-3 py-1.5 text-xs font-bold text-ink-3 hover:text-rose transition-colors">{label}</a>
           ))}
         </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link href={buildUrl({ verified: searchParams.verified === '1' ? undefined : '1', page: undefined })}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${searchParams.verified === '1' ? 'bg-gn text-white' : 'bg-page-2 text-ink-3 hover:bg-page'}`}>
-            ✓ Verified only
-          </Link>
-          <Link href={buildUrl({ open: searchParams.open === '1' ? undefined : '1', page: undefined })}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${searchParams.open === '1' ? 'bg-gn text-white' : 'bg-page-2 text-ink-3 hover:bg-page'}`}>
-            ● Open now
-          </Link>
-          <div className="flex items-center rounded-full border border-bdr overflow-hidden ml-1">
-            <Link href={buildUrl({ view: undefined })} aria-label="Grid view"
-              className={`px-3 py-1.5 text-xs font-bold ${view === 'grid' ? 'bg-ink text-white' : 'bg-white text-ink-3 hover:bg-page-2'}`}>
-              ▦ Grid
-            </Link>
-            <Link href={buildUrl({ view: 'list' })} aria-label="List view"
-              className={`px-3 py-1.5 text-xs font-bold ${view === 'list' ? 'bg-ink text-white' : 'bg-white text-ink-3 hover:bg-page-2'}`}>
-              ☰ List
-            </Link>
-          </div>
-        </div>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_300px] gap-6 items-start">
-        {/* Main column */}
-        <div>
-          {!salons?.length ? (
-            <div className="text-center py-16 text-ink-3">
-              <p className="text-5xl mb-4">🔍</p>
-              <p className="font-bold text-lg">No salons found</p>
-              <p className="text-sm mt-1">Try adjusting your search or filters</p>
-              <Link href="/salons" className="btn btn-outline btn-sm mt-4">Clear all filters</Link>
-            </div>
-          ) : view === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {salons.map(s => <SalonCard key={s.id} salon={s}/>)}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {salons.map(s => {
-                const img = s.images?.[0]
-                return (
-                  <Link key={s.id} href={`/salon/${s.slug}`} className="card flex gap-4 p-3 items-stretch hover:shadow-lg transition-all">
-                    <div className="relative w-36 sm:w-48 flex-shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-ink to-purple-900">
-                      {img
-                        ? <Image src={img} alt={s.name} fill className="object-cover"/>
-                        : <div className="absolute inset-0 flex items-center justify-center text-4xl">{s.emoji}</div>}
-                    </div>
-                    <div className="flex-1 min-w-0 py-1 flex flex-col justify-center">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <h3 className="font-bold truncate">{s.name}</h3>
-                        {s.is_verified && <span className="badge-pill bg-gn/90 text-white text-2xs">✓ Verified</span>}
-                        {s.is_featured && <span className="badge-pill bg-gold/90 text-white text-2xs">★ Featured</span>}
-                      </div>
-                      <p className="text-xs text-ink-3 mb-2">📍 {s.area}, {s.city}</p>
-                      <div className="flex items-center gap-4">
-                        <span className="text-xs text-ink-3 font-semibold">{s.rating > 0 ? `★ ${s.rating} (${s.review_count})` : '⭐ New'}</span>
-                        {s.price_from > 0 && <span className="text-xs text-ink-3">From <strong className="text-ink">{fmtPrice(s.price_from * 100)}</strong></span>}
-                      </div>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
+      {/* Main content */}
+      <div className="container py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6">
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-8">
-              {page > 1 && (
-                <Link href={buildUrl({ page: String(page - 1) })} className="btn btn-outline btn-sm">← Prev</Link>
-              )}
-              {pageNumbers[0] > 1 && <span className="text-ink-3 text-sm px-1">…</span>}
-              {pageNumbers.map(p => (
-                <Link key={p} href={buildUrl({ page: String(p) })}
-                  className={`btn btn-sm ${page === p ? 'bg-ink text-white' : 'btn-outline'}`}>
-                  {p}
-                </Link>
-              ))}
-              {pageNumbers[pageNumbers.length - 1] < totalPages && <span className="text-ink-3 text-sm px-1">…</span>}
-              {page < totalPages && (
-                <Link href={buildUrl({ page: String(page + 1) })} className="btn btn-outline btn-sm">Next →</Link>
-              )}
+          {/* Left column */}
+          <div className="flex flex-col gap-6">
+
+            {/* About */}
+            {salon.description && (
+              <div className="card card-body" id="about">
+                <h2 className="font-bold text-lg mb-3">About</h2>
+                <p className="text-sm leading-relaxed text-ink-2">{salon.description}</p>
+                {salon.accepts_online_bookings && (
+                  <span className="badge-pill bg-green-100 text-gn text-2xs mt-3 inline-block">✓ Booking Enabled</span>
+                )}
+              </div>
+            )}
+
+            {/* Services & Pricing */}
+            {(services?.length || 0) > 0 && (
+              <div className="card card-body" id="pricing">
+                <div className="flex justify-between items-center mb-1">
+                  <h2 className="font-bold text-lg">Services &amp; Pricing</h2>
+                  <span className="text-xs text-ink-3">From <strong className="text-ink">{fmtPrice(cheapest)}</strong></span>
+                </div>
+                {Object.entries(svcGroups).map(([cat, svcs]: [string, any]) => (
+                  <div key={cat}>
+                    <p className="text-xs font-bold uppercase tracking-wide text-ink-3 my-3">{cat}</p>
+                    {svcs.map((s: any) => <ServiceRow key={s.id} service={s} salonId={salon.id}/>)}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Highlights */}
+            {(salon.tags?.length || 0) > 0 && (
+              <div className="card card-body">
+                <h2 className="font-bold text-lg mb-3">Highlights</h2>
+                <div className="flex flex-wrap gap-2">
+                  {salon.tags.map((t: string) => (
+                    <span key={t} className="badge-pill bg-page-2 text-ink-2 text-xs">{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Gallery */}
+            {(salon.images?.length || 0) > 0 && (
+              <div className="card card-body" id="gallery">
+                <h2 className="font-bold text-lg mb-3">Gallery</h2>
+                <Gallery images={salon.images} alt={salon.name}/>
+              </div>
+            )}
+
+            {/* Opening hours */}
+            {(hours?.length || 0) > 0 && (
+              <div className="card card-body">
+                <h2 className="font-bold text-lg mb-3">Opening Hours</h2>
+                {hours!.map(h => (
+                  <div key={h.day_of_week} className={`flex justify-between py-2.5 border-b border-bdr last:border-0 ${h.day_of_week === today ? 'font-bold text-rose' : ''}`}>
+                    <span>{days[h.day_of_week]}{h.day_of_week === today ? ' (Today)' : ''}</span>
+                    <span>{h.is_closed ? 'Closed' : `${h.open_time?.substring(0,5)} – ${h.close_time?.substring(0,5)}`}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Reviews */}
+            <div className="card card-body" id="reviews">
+              <h2 className="font-bold text-lg mb-4">Reviews ({salon.review_count})</h2>
+              <div className="mb-5">
+                <ReviewForm salonId={salon.id} slug={salon.slug} loggedIn={!!viewer}/>
+              </div>
+              {reviews?.length
+                ? reviews.map(r => <ReviewCard key={r.id} review={{ ...r, ...(r.profiles as any) }}/>)
+                : <p className="text-sm text-ink-3">No reviews yet — be the first!</p>
+              }
             </div>
-          )}
+
+            {/* Enquiry form */}
+            <div className="card card-body" id="enquiry">
+              <h2 className="font-bold text-xl mb-4">📩 Send an Enquiry</h2>
+              <form action={submitEnquiry} className="space-y-4">
+                <input type="hidden" name="salon_id" value={salon.id}/>
+                <input type="hidden" name="enq_slug" value={salon.slug}/>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Your Name *</label>
+                    <input name="enq_name" className="input" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required/>
+                  </div>
+                  <div>
+                    <label className="label">Email *</label>
+                    <input name="enq_email" type="email" className="input" required/>
+                  </div>
+                </div>
+                <div>
+                  <label className="label">Phone</label>
+                  <input name="enq_phone" type="tel" className="input" placeholder="+44 7700 900000" pattern="[0-9+\s()\-]{7,20}" title="Digits, spaces, +, -, () only"/>
+                </div>
+                <div>
+                  <label className="label">Subject</label>
+                  <input name="enq_subject" className="input" placeholder="e.g. Pricing for knotless braids"/>
+                </div>
+                <div>
+                  <label className="label">Message *</label>
+                  <textarea name="enq_message" className="input" rows={4} placeholder="Tell us what you need…" required/>
+                </div>
+                <button type="submit" className="btn btn-primary w-full justify-center">Send Enquiry →</button>
+              </form>
+            </div>
+
+            {/* Similar salons */}
+            {(similar?.length || 0) > 0 && (
+              <div>
+                <h2 className="font-bold text-lg mb-3">You may also be interested in</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {similar!.map(s => (
+                    <Link key={s.id} href={`/salon/${s.slug}`} className="card group">
+                      <div className="relative h-28 bg-gradient-to-br from-ink to-purple-900 overflow-hidden">
+                        {s.images?.[0]
+                          ? <img src={s.images[0]} alt={s.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform"/>
+                          : <div className="absolute inset-0 flex items-center justify-center text-4xl">{s.emoji}</div>}
+                      </div>
+                      <div className="p-3">
+                        <p className="font-bold text-sm truncate">{s.name}</p>
+                        <p className="text-xs text-ink-3">📍 {s.area}</p>
+                        <p className="text-xs text-ink-3 mt-1">★ {s.rating || '—'} ({s.review_count})</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right column — sticky sidebar */}
+          <div>
+            <div className="card card-body sticky top-20 space-y-4">
+              <div>
+                <p className="text-xs text-ink-3">Starting from</p>
+                <p className="text-2xl font-black">{fmtPrice(cheapest)}</p>
+              </div>
+
+              <Link href={`/booking?salon=${salon.id}`} className="btn btn-primary w-full justify-center">
+                Book Appointment →
+              </Link>
+              <a href="#pricing" className="btn btn-outline w-full justify-center text-sm">Check Availability</a>
+
+              <div className="space-y-2 pt-2 border-t border-bdr text-xs text-ink-3">
+                <p>✅ Instant confirmation — no waiting for approval</p>
+                <p>💷 Transparent pricing, no hidden charges</p>
+                <p>🔒 Secure payments on GlowNaija</p>
+                {salon.is_verified && <p>🛡️ Verified salon on GlowNaija</p>}
+              </div>
+
+              {owner && (
+                <div className="pt-3 border-t border-bdr">
+                  <p className="text-2xs font-bold uppercase tracking-wide text-ink-3 mb-2">Salon Owner</p>
+                  <div className="flex items-center gap-2.5">
+                    {owner.avatar_url
+                      ? <img src={owner.avatar_url} className="w-9 h-9 rounded-full object-cover flex-shrink-0" alt=""/>
+                      : <div className="w-9 h-9 rounded-full bg-rose flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{owner.first_name?.[0] || '?'}</div>}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold truncate">{owner.first_name} {owner.last_name}</p>
+                      <a href="#enquiry" className="text-2xs text-rose font-semibold">Contact via enquiry form</a>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-bdr">
+                <p className="text-2xs font-bold uppercase tracking-wide text-ink-3 mb-1">Today</p>
+                <p className="text-sm font-semibold">
+                  {todayHours ? (todayHours.is_closed ? 'Closed today' : `${todayHours.open_time?.substring(0,5)} – ${todayHours.close_time?.substring(0,5)}`) : 'Hours not set'}
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-bdr space-y-2" id="location">
+                <p className="text-2xs font-bold uppercase tracking-wide text-ink-3 mb-1">Location</p>
+                {salon.address && <p className="text-sm">{salon.address}</p>}
+                <p className="text-sm text-ink-3">{salon.area}, {salon.city}{salon.postcode ? `, ${salon.postcode}` : ''}</p>
+                {salon.phone && <a href={`tel:${salon.phone}`} className="flex items-center gap-2 text-sm font-semibold">📞 {salon.phone}</a>}
+                {salon.instagram && (
+                  <a href={`https://instagram.com/${salon.instagram}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-semibold">
+                    📸 @{salon.instagram}
+                  </a>
+                )}
+                {(salon.facebook || salon.twitter || salon.youtube || salon.linkedin || salon.whatsapp || salon.google_business) && (
+                  <div className="flex gap-2 pt-1">
+                    {salon.facebook && <a href={salon.facebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">📘</a>}
+                    {salon.twitter && <a href={salon.twitter} target="_blank" rel="noreferrer" aria-label="Twitter / X" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">🐦</a>}
+                    {salon.youtube && <a href={salon.youtube} target="_blank" rel="noreferrer" aria-label="YouTube" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">▶️</a>}
+                    {salon.linkedin && <a href={salon.linkedin} target="_blank" rel="noreferrer" aria-label="LinkedIn" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">💼</a>}
+                    {salon.whatsapp && <a href={salon.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">💬</a>}
+                    {salon.google_business && <a href={salon.google_business} target="_blank" rel="noreferrer" aria-label="Google Business" className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center hover:bg-rose-50">📍</a>}
+                  </div>
+                )}
+                <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn btn-outline w-full justify-center text-xs mt-2">🧭 Get Directions</a>
+              </div>
+            </div>
+          </div>
+
         </div>
-
-        {/* Sidebar */}
-        <aside className="space-y-4">
-          <div className="card card-body bg-ink text-white">
-            <p className="font-black mb-1">List your salon</p>
-            <p className="text-xs text-white/60 mb-4">Reach clients looking for the perfect salon to book.</p>
-            <Link href="/business" className="btn bg-rose text-white w-full justify-center hover:bg-rose-dark">List your salon →</Link>
-          </div>
-          <div className="card card-body">
-            <p className="font-bold text-sm mb-1">Need help?</p>
-            <p className="text-xs text-ink-3 mb-3">Our support team is here to help you find the perfect salon.</p>
-            <a href="mailto:hello@glownaija.co.uk" className="text-rose text-xs font-bold">✉ Email support</a>
-          </div>
-        </aside>
-      </div>
-
-      {/* Trust badges */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 pt-8 border-t border-bdr">
-        {[
-          ['✓', 'Verified salons', 'Every listing manually checked'],
-          ['⚡', 'Instant booking', 'Book your slot and pay securely'],
-          ['🔒', 'Secure payment', '100% secure payment on GlowNaija'],
-          ['📅', 'Live availability', 'Real-time slots, no back-and-forth'],
-        ].map(([icon, title, desc]) => (
-          <div key={title as string} className="flex items-start gap-2.5">
-            <span className="icon-badge w-8 h-8 text-sm bg-page-2 flex-shrink-0">{icon}</span>
-            <div>
-              <p className="text-xs font-bold">{title}</p>
-              <p className="text-2xs text-ink-3">{desc}</p>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   )

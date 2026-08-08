@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect }       from 'next/navigation'
 import { createClient }   from '@/lib/supabase/server'
-import { slugify, generateRef, isValidEmail, isValidPhone, isValidUKPhone, isValidUKPostcode, isValidBusinessName, isValidName } from '@/lib/utils'
+import { slugify, generateRef, isValidEmail, isValidPhone, isValidUKPostcode, isValidName } from '@/lib/utils'
 
 export async function createSalon(formData: FormData) {
   const supabase = await createClient()
@@ -24,21 +24,14 @@ export async function createSalon(formData: FormData) {
   const years    = parseInt(formData.get('years_active') as string || '0')
   const onlineBk = formData.get('accepts_online_bookings') === 'on'
 
-  const address  = (formData.get('address') as string || '').trim()
-
   // Validation
   if (!name || name.length < 2) return { error: 'Business name is required.' }
   if (name.length > 100) return { error: 'Business name must be under 100 characters.' }
-  if (!isValidBusinessName(name)) return { error: 'Salon name can only contain letters and spaces — no numbers or special characters.' }
   if (!city) return { error: 'City is required.' }
   if (!area) return { error: 'Area is required.' }
-  if (!address) return { error: 'Street address is required.' }
-  if (address.length > 200) return { error: 'Street address must be under 200 characters.' }
   if (!isValidEmail(email)) return { error: 'Please enter a valid contact email.' }
-  if (!phone) return { error: 'Phone number is required.' }
-  if (!isValidUKPhone(phone)) return { error: 'Please enter a valid UK phone number, e.g. +44 7700 900000 or 020 7946 0958.' }
-  if (!postcode) return { error: 'Postcode is required.' }
-  if (!isValidUKPostcode(postcode)) return { error: 'Please enter a valid UK postcode, e.g. SE15 5DT.' }
+  if (phone && !isValidPhone(phone)) return { error: 'Please enter a valid phone number.' }
+  if (postcode && !isValidUKPostcode(postcode)) return { error: 'Please enter a valid UK postcode.' }
   if (website && !/^https?:\/\/.+\..+/.test(website)) return { error: 'Website must be a full URL, e.g. https://yoursalon.co.uk' }
   if (instagram && !/^[a-zA-Z0-9._]{1,60}$/.test(instagram)) return { error: 'Instagram handle looks invalid.' }
 
@@ -78,7 +71,8 @@ export async function createSalon(formData: FormData) {
 
   const { data: salon, error } = await supabase.from('salons').insert({
     owner_id: user.id, name, slug, description: desc, emoji,
-    address, area, city, postcode,
+    address: (formData.get('address') as string || '').trim() || null,
+    area, city, postcode: postcode || null,
     phone: phone || null, email: email || null,
     instagram: instagram || null, website: website || null,
     service_types, plan, listing_status: 'pending',
@@ -195,10 +189,7 @@ export async function submitReview(formData: FormData) {
     }
   } catch { /* non-fatal — the review itself already saved successfully above */ }
 
-  // NOTE: this is the salon *detail* page (singular "/salon/[slug]"), not the
-  // "/salons" listing — revalidating the wrong path here previously meant the
-  // star/review-count shown on the salon page could look stale after posting.
-  revalidatePath(`/salon/${formData.get('slug')}`)
+  revalidatePath(`/salons/${formData.get('slug')}`)
   return { success: true }
 }
 

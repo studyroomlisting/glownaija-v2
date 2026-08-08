@@ -72,35 +72,8 @@ export function isValidPhone(phone: string): boolean {
   return /^[0-9+\s()\-]{7,20}$/.test(phone)
 }
 
-/**
- * UK-specific phone validation (landline + mobile), international or national format:
- *  - +44 7700 900000 / +447700900000
- *  - 07700 900000 / 07700900000
- *  - 020 7946 0958 (London landline), 0117 496 0625 (regional landline), etc.
- * Spaces/hyphens are stripped before matching so any common visual grouping is accepted.
- */
-export function isValidUKPhone(phone: string): boolean {
-  const cleaned = phone.trim().replace(/[\s\-]/g, '')
-  return /^(?:\+44|0044|0)(?:\d{9,10})$/.test(cleaned)
-}
-
 export function isValidName(name: string): boolean {
   return /^[A-Za-z][A-Za-z\s'.-]{1,59}$/.test(name.trim())
-}
-
-/** Business/salon name — letters and spaces only, no digits or special characters. */
-export function isValidBusinessName(name: string): boolean {
-  return /^[A-Za-z][A-Za-z\s]{1,99}$/.test(name.trim())
-}
-
-/** Slices an already-fetched array into a page. Used for dashboard tables where the
- *  full list is fetched once for stat calculations, and only the rendered table needs
- *  to be paged — avoids re-querying the database just to paginate the display. */
-export function paginateArray<T>(items: T[], page: number, perPage: number): { items: T[]; totalPages: number; page: number } {
-  const totalPages = Math.max(1, Math.ceil(items.length / perPage))
-  const safePage = Math.min(Math.max(1, page || 1), totalPages)
-  const start = (safePage - 1) * perPage
-  return { items: items.slice(start, start + perPage), totalPages, page: safePage }
 }
 
 interface SocialPlatformConfig { domains: string[]; canonicalDomain: string; handlePrefix?: string; label: string }

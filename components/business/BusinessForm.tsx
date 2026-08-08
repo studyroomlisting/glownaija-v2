@@ -27,16 +27,16 @@ export default function BusinessForm({ bTypes, cities }: BusinessFormProps) {
         <div className="alert-error" role="alert">{error}</div>
       )}
 
-      <div><label className="label">Salon Name *</label><input name="business_name" className="input" placeholder="e.g. Adaeze Natural Hair Studio" pattern="[A-Za-z][A-Za-z\s]{1,99}" title="Letters and spaces only — no numbers or special characters" required/></div>
-      <div><label className="label">Street Address *</label><input name="address" className="input" placeholder="e.g. 45 Rye Lane" maxLength={200} required/></div>
+      <div><label className="label">Salon Name *</label><input name="business_name" className="input" placeholder="e.g. Adaeze Natural Hair Studio" required/></div>
+      <div><label className="label">Street Address</label><input name="address" className="input" placeholder="e.g. 45 Rye Lane" maxLength={200}/></div>
       <div><label className="label">Business Type *</label><select name="business_type" className="input">{bTypes.map(t=><option key={t}>{t}</option>)}</select></div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className="label">City *</label><select name="city" className="input">{cities.map(c=><option key={c}>{c}</option>)}</select></div>
         <div><label className="label">Area / Neighbourhood *</label><input name="area" className="input" placeholder="e.g. Peckham" required/></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="label">Postcode *</label><input name="postcode" className="input" placeholder="SE15 5DT" style={{textTransform:'uppercase'}} pattern="[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][A-Za-z]{2}" title="Enter a valid UK postcode" required/></div>
-        <div><label className="label">Phone *</label><input name="phone" type="tel" className="input" placeholder="+44 7700 900000" pattern="(\+44|0044|0)\s?[0-9\s]{9,10}" title="Enter a valid UK phone number, e.g. +44 7700 900000 or 020 7946 0958" required/></div>
+        <div><label className="label">Postcode</label><input name="postcode" className="input" placeholder="SE15 5DT" style={{textTransform:'uppercase'}} pattern="[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][A-Za-z]{2}" title="Enter a valid UK postcode"/></div>
+        <div><label className="label">Phone</label><input name="phone" type="tel" className="input" placeholder="+44 7700 900000" pattern="[0-9+\s()\-]{7,20}" title="Digits, spaces, +, -, () only"/></div>
       </div>
       <div><label className="label">Contact Email *</label><input name="email" type="email" className="input" required/></div>
       <div className="grid grid-cols-2 gap-3">

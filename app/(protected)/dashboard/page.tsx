@@ -2,26 +2,24 @@
 import { createClient }   from '@/lib/supabase/server'
 import { redirect }       from 'next/navigation'
 import Link               from 'next/link'
-import { fmtPrice, formatDuration, ukDateString, paginateArray } from '@/lib/utils'
+import { fmtPrice, formatDuration, ukDateString } from '@/lib/utils'
 import StatsCard          from '@/components/dashboard/StatsCard'
 import PhotoUpload        from '@/components/dashboard/PhotoUpload'
 import ReviewCard         from '@/components/salon/ReviewCard'
 import ActionForm         from '@/components/dashboard/ActionForm'
 import ActionButton       from '@/components/dashboard/ActionButton'
 import DashboardSidebar   from '@/components/layout/DashboardSidebar'
-import Pagination         from '@/components/ui/Pagination'
 import { addService, updateProfile, updateHours, updateEnquiryStatus, deleteService, toggleSalonPublished } from '@/lib/actions/dashboard'
 import { signOut } from '@/lib/actions/auth'
 import { updateBookingStatus } from '@/lib/actions/bookings'
 import { expireStaleBookings } from '@/lib/bookings-expiry'
 
 export const dynamic = 'force-dynamic'
-const DASHBOARD_PER_PAGE = 10
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { tab?: string; bstatus?: string; salon?: string; page?: string }
+  searchParams: { tab?: string; bstatus?: string; salon?: string }
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -41,18 +39,6 @@ export default async function DashboardPage({
 
   const tab      = searchParams.tab    || 'overview'
   const bfilter  = searchParams.bstatus || 'all'
-  const page     = Math.max(1, parseInt(searchParams.page || '1'))
-
-  // Preserves tab/salon/bstatus while paging — used by the Pagination control on
-  // the Bookings, Enquiries and Reviews tabs.
-  function buildPageUrl(targetPage: number) {
-    const params = new URLSearchParams()
-    params.set('salon', salon.id)
-    if (tab !== 'overview') params.set('tab', tab)
-    if (searchParams.bstatus) params.set('bstatus', searchParams.bstatus)
-    if (targetPage > 1) params.set('page', String(targetPage))
-    return `/dashboard?${params.toString()}`
-  }
 
   // ── Fetch all data ───────────────────────────────────────────────────────
   const [
@@ -736,7 +722,7 @@ export default async function DashboardPage({
               </div>
             ) : (
               <div className="space-y-3">
-                {paginateArray(bFiltered, page, DASHBOARD_PER_PAGE).items.map(b => (
+                {bFiltered.map(b => (
                   <div key={b.id} className="card card-body">
                     <div className="flex justify-between items-start flex-wrap gap-3 mb-3">
                       <div>
@@ -773,7 +759,6 @@ export default async function DashboardPage({
                     )}
                   </div>
                 ))}
-                <Pagination page={page} totalPages={paginateArray(bFiltered, page, DASHBOARD_PER_PAGE).totalPages} buildUrl={buildPageUrl}/>
               </div>
             )}
           </div>
@@ -802,7 +787,7 @@ export default async function DashboardPage({
               </div>
             ) : (
               <div className="space-y-3">
-                {paginateArray(enquiries.filter(e => e.status !== 'archived'), page, DASHBOARD_PER_PAGE).items.map(e => (
+                {enquiries.filter(e => e.status !== 'archived').map(e => (
                   <div key={e.id} className={`card card-body ${e.status === 'unread' ? 'border-l-4 border-l-rose' : ''}`}>
                     <div className="flex justify-between items-start flex-wrap gap-2 mb-3">
                       <div>
@@ -831,11 +816,6 @@ export default async function DashboardPage({
                     </a>
                   </div>
                 ))}
-                <Pagination
-                  page={page}
-                  totalPages={paginateArray(enquiries.filter(e => e.status !== 'archived'), page, DASHBOARD_PER_PAGE).totalPages}
-                  buildUrl={buildPageUrl}
-                />
               </div>
             )}
           </div>
@@ -881,10 +861,9 @@ export default async function DashboardPage({
               </div>
             ) : (
               <div className="space-y-3">
-                {paginateArray(reviews, page, DASHBOARD_PER_PAGE).items.map(r => (
+                {reviews.map(r => (
                   <ReviewCard key={r.id} review={{...r, ...(r.profiles as any)}} />
                 ))}
-                <Pagination page={page} totalPages={paginateArray(reviews, page, DASHBOARD_PER_PAGE).totalPages} buildUrl={buildPageUrl}/>
               </div>
             )}
           </div>
