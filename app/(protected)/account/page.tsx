@@ -142,7 +142,10 @@ export default async function AccountPage({
       {searchParams.booking_paid === '1' && (
         <div className="alert-success mb-4">✅ Payment received — your booking is confirmed!</div>
       )}
-      {searchParams.payment_error === '1' && (
+      {searchParams.payment_error === 'not_configured' && (
+        <div className="alert-error mb-4">Online payment isn't set up yet for this site. Please contact support — this is a site configuration issue, not something wrong with your booking.</div>
+      )}
+      {searchParams.payment_error && !['not_configured'].includes(searchParams.payment_error) && (
         <div className="alert-error mb-4">Something went wrong starting your payment. Please try again, or contact support if this keeps happening.</div>
       )}
 

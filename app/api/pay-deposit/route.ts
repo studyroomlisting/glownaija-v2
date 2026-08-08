@@ -13,6 +13,14 @@ export async function GET(request: NextRequest) {
   const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin
 
   try {
+    // Fail fast with a specific, diagnosable reason if Stripe simply isn't configured —
+    // this is the single most common cause of this route failing, and previously it
+    // just fell through to a generic Stripe SDK error deep inside checkout.sessions.create.
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('pay-deposit: STRIPE_SECRET_KEY is not set')
+      return NextResponse.redirect(`${origin}/account?tab=bookings&payment_error=not_configured`)
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.redirect(`${origin}/auth/signin`)
@@ -40,8 +48,14 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.redirect(session.url!)
-  } catch (err) {
+  } catch (err: any) {
     console.error('pay-deposit failed:', err)
-    return NextResponse.redirect(`${origin}/account?tab=bookings&payment_error=1`)
+    // Stripe's SDK errors have a `type` field — surface a safe, specific reason
+    // code (never the raw error/message, which could contain sensitive detail)
+    // so this is diagnosable from the URL alone next time, without server logs.
+    const reason = err?.type === 'StripeAuthenticationError' ? 'stripe_auth'
+                 : err?.type?.startsWith('Stripe')            ? 'stripe_error'
+                 : 'unknown'
+    return NextResponse.redirect(`${origin}/account?tab=bookings&payment_error=${reason}`)
   }
 }
