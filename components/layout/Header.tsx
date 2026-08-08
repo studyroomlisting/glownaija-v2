@@ -191,8 +191,6 @@ export default function Header() {
                     className="block px-4 py-2.5 text-sm font-semibold text-ink hover:bg-page-2 transition-colors">
                     {profile?.is_admin ? '🛠 Admin Panel' : '📊 Dashboard'}
                   </Link>
-                  <Link href="/account" onClick={() => setAccountMenuOpen(false)}
-                    className="block px-4 py-2.5 text-sm font-semibold text-ink hover:bg-page-2 transition-colors">My Account</Link>
                   <form action={signOut}>
                     <button className="w-full text-left px-4 py-2.5 text-sm font-semibold text-rose hover:bg-page-2 transition-colors">Sign out</button>
                   </form>

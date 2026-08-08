@@ -10,6 +10,7 @@ import ActionForm         from '@/components/dashboard/ActionForm'
 import ActionButton       from '@/components/dashboard/ActionButton'
 import DashboardSidebar   from '@/components/layout/DashboardSidebar'
 import { addService, updateProfile, updateHours, updateEnquiryStatus, deleteService, toggleSalonPublished } from '@/lib/actions/dashboard'
+import { signOut } from '@/lib/actions/auth'
 import { updateBookingStatus } from '@/lib/actions/bookings'
 import { expireStaleBookings } from '@/lib/bookings-expiry'
 
@@ -144,6 +145,7 @@ export default async function DashboardPage({
         userAvatarUrl={ownerProfile?.avatar_url}
         extraQuery={`salon=${salon.id}`}
         accountHref="/account"
+        signOutAction={signOut}
       />
 
       <div className="flex-1 min-w-0">

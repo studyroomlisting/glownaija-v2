@@ -19,16 +19,17 @@ interface DashboardSidebarProps {
   userAvatarUrl?: string | null
   extraQuery?: string       // e.g. 'salon=<id>' — preserved on every nav link
   accountHref?: string      // where the user block at the bottom links to
+  signOutAction?: (formData: FormData) => void | Promise<void>  // when provided, shows a working sign-out button instead of the edit-profile pencil
 }
 
 export default function DashboardSidebar({
   basePath, activeTab, items, brandInitial, brandName, brandSubtitle,
-  userName, userRole, userAvatarUrl, extraQuery, accountHref,
+  userName, userRole, userAvatarUrl, extraQuery, accountHref, signOutAction,
 }: DashboardSidebarProps) {
   const qs = (tabId: string) => `${basePath}?${extraQuery ? extraQuery + '&' : ''}tab=${tabId}`
 
-  const UserBlock = (
-    <Link href={accountHref || '#'} className="flex items-center gap-2.5 px-1 py-1 -mx-1 rounded-xl hover:bg-page-2 transition-colors">
+  const userInfo = (
+    <div className="flex items-center gap-2.5 min-w-0 flex-1">
       {userAvatarUrl
         ? <img src={userAvatarUrl} className="w-8 h-8 rounded-full object-cover flex-shrink-0" alt=""/>
         : <div className="w-8 h-8 rounded-full bg-rose flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{userName?.[0]?.toUpperCase() || '?'}</div>
@@ -37,6 +38,20 @@ export default function DashboardSidebar({
         <p className="text-sm font-bold truncate">{userName}</p>
         <p className="text-2xs text-ink-3">{userRole}</p>
       </div>
+    </div>
+  )
+
+  const UserBlock = signOutAction ? (
+    <div className="flex items-center gap-2.5 px-1 py-1 -mx-1">
+      {userInfo}
+      <form action={signOutAction}>
+        <button type="submit" aria-label="Sign out" title="Sign out"
+          className="text-ink-3 hover:text-rose text-base flex-shrink-0 transition-colors">⏻</button>
+      </form>
+    </div>
+  ) : (
+    <Link href={accountHref || '#'} className="flex items-center gap-2.5 px-1 py-1 -mx-1 rounded-xl hover:bg-page-2 transition-colors">
+      {userInfo}
       <span className="text-ink-3 text-xs flex-shrink-0">✎</span>
     </Link>
   )

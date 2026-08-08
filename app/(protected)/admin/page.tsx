@@ -12,6 +12,7 @@ import ProductForm from '@/components/admin/ProductForm'
 import ProductRow  from '@/components/admin/ProductRow'
 import StatsCard from '@/components/dashboard/StatsCard'
 import DashboardSidebar from '@/components/layout/DashboardSidebar'
+import { signOut } from '@/lib/actions/auth'
 import { expireStaleBookings } from '@/lib/bookings-expiry'
 import { fmtPrice } from '@/lib/utils'
 
@@ -105,6 +106,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
         userRole="Administrator"
         userAvatarUrl={profile?.avatar_url}
         accountHref="/account"
+        signOutAction={signOut}
       />
 
       <div className="flex-1 min-w-0">
