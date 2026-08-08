@@ -11,12 +11,15 @@ import AuditRow  from '@/components/admin/AuditRow'
 import ProductForm from '@/components/admin/ProductForm'
 import ProductRow  from '@/components/admin/ProductRow'
 import StatsCard from '@/components/dashboard/StatsCard'
+import Pagination from '@/components/ui/Pagination'
 import DashboardSidebar from '@/components/layout/DashboardSidebar'
 import { signOut } from '@/lib/actions/auth'
 import { expireStaleBookings } from '@/lib/bookings-expiry'
 import { fmtPrice } from '@/lib/utils'
 
-export default async function AdminPage({ searchParams }: { searchParams: { tab?: string; status?: string; edit?: string } }) {
+const ADMIN_PER_PAGE = 10
+
+export default async function AdminPage({ searchParams }: { searchParams: { tab?: string; status?: string; edit?: string; page?: string } }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
@@ -24,7 +27,19 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
   const { data: profile } = await supabase.from('profiles').select('is_admin,first_name,last_name,avatar_url').eq('id', user.id).single()
   if (!profile?.is_admin) redirect('/')
 
-  const tab = searchParams.tab || 'overview'
+  const tab  = searchParams.tab || 'overview'
+  const page = Math.max(1, parseInt(searchParams.page || '1'))
+  const per  = ADMIN_PER_PAGE
+
+  // Preserves tab/status while paging — used by the Pagination control on every tab.
+  function buildUrl(targetPage: number) {
+    const params = new URLSearchParams()
+    if (tab !== 'overview') params.set('tab', tab)
+    if (searchParams.status) params.set('status', searchParams.status)
+    if (targetPage > 1) params.set('page', String(targetPage))
+    const qs = params.toString()
+    return `/admin${qs ? `?${qs}` : ''}`
+  }
 
   await expireStaleBookings(supabase)
 
@@ -56,15 +71,23 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
   const revenue30d = (recentBookings || []).reduce((s, b) => s + (b.deposit_amount || 0), 0)
                     + (recentOrders   || []).reduce((s, o) => s + (o.total || 0), 0)
 
-  let salonsQuery = supabase.from('salons').select('*').order('created_at', { ascending: false }).limit(30)
+  // Only the active tab's list actually needs paging (the others render 0 rows either
+  // way), but all are fetched together as before — each just pages independently off
+  // the same `page` param, so switching tabs naturally lands back on page 1.
+  const range = (p: number) => [(p - 1) * per, p * per - 1] as const
+
+  let salonsQuery = supabase.from('salons').select('*', { count: 'exact' }).order('created_at', { ascending: false })
   if (searchParams.status) salonsQuery = salonsQuery.eq('listing_status', searchParams.status)
-  const { data: salons }   = await salonsQuery
-  const { data: users }    = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(30)
-  const { data: bookings } = await supabase.from('bookings').select('*,salons(name),profiles(first_name,last_name,email)').order('created_at', { ascending: false }).limit(30)
-  const { data: orders }   = await supabase.from('orders').select('*,profiles(first_name,last_name,email)').order('created_at', { ascending: false }).limit(30)
-  const { data: reviews }  = await supabase.from('reviews').select('*,profiles(first_name,last_name),salons(name)').order('created_at', { ascending: false }).limit(30)
-  const { data: audit }    = await supabase.from('audit_logs').select('*,profiles(first_name,last_name)').order('created_at', { ascending: false }).limit(50)
-  const { data: products } = await supabase.from('products').select('*').order('created_at', { ascending: false }).limit(50)
+  salonsQuery = salonsQuery.range(...range(page))
+  const { data: salons, count: salonsCount }     = await salonsQuery
+  const { data: users, count: usersCount }       = await supabase.from('profiles').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(...range(page))
+  const { data: bookings, count: bookingsCount } = await supabase.from('bookings').select('*,salons(name),profiles(first_name,last_name,email)', { count: 'exact' }).order('created_at', { ascending: false }).range(...range(page))
+  const { data: orders, count: ordersListCount } = await supabase.from('orders').select('*,profiles(first_name,last_name,email)', { count: 'exact' }).order('created_at', { ascending: false }).range(...range(page))
+  const { data: reviews, count: reviewsCount }   = await supabase.from('reviews').select('*,profiles(first_name,last_name),salons(name)', { count: 'exact' }).order('created_at', { ascending: false }).range(...range(page))
+  const { data: audit, count: auditCount }       = await supabase.from('audit_logs').select('*,profiles(first_name,last_name)', { count: 'exact' }).order('created_at', { ascending: false }).range(...range(page))
+  const { data: products, count: productsListCount } = await supabase.from('products').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(...range(page))
+
+  const totalPages = (c: number | null) => Math.max(1, Math.ceil((c || 0) / per))
   const { data: editingProduct } = searchParams.edit
     ? await supabase.from('products').select('*').eq('id', searchParams.edit).single()
     : { data: null }
@@ -160,6 +183,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
             {!salons?.length
               ? <div className="text-center py-12 text-ink-3">No salons found</div>
               : salons.map(s => <SalonRow key={s.id} salon={s} />)}
+            <Pagination page={page} totalPages={totalPages(salonsCount)} buildUrl={buildUrl}/>
           </div>
         )}
 
@@ -168,6 +192,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
             {!users?.length
               ? <div className="text-center py-12 text-ink-3">No users yet</div>
               : users.map(u => <UserRow key={u.id} profile={{ ...u, banned: bannedIds.has(u.id) }} isSelf={u.id === user.id} />)}
+            <Pagination page={page} totalPages={totalPages(usersCount)} buildUrl={buildUrl}/>
           </div>
         )}
 
@@ -181,12 +206,13 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
               <ProductForm key={editingProduct?.id || 'new'} product={editingProduct} />
             </div>
             <div>
-              <h2 className="font-bold text-lg mb-3">All Products ({products?.length || 0})</h2>
+              <h2 className="font-bold text-lg mb-3">All Products ({productsListCount || 0})</h2>
               {!products?.length ? (
                 <div className="text-center py-12 text-ink-3">No products yet — add your first one.</div>
               ) : (
                 <div className="space-y-3">
                   {products.map(p => <ProductRow key={p.id} product={p} />)}
+                  <Pagination page={page} totalPages={totalPages(productsListCount)} buildUrl={buildUrl}/>
                 </div>
               )}
             </div>
@@ -208,6 +234,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
                   </div>
                 </div>
               ))}
+            <Pagination page={page} totalPages={totalPages(bookingsCount)} buildUrl={buildUrl}/>
           </div>
         )}
 
@@ -216,6 +243,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
             {!orders?.length
               ? <div className="text-center py-12 text-ink-3">No orders yet</div>
               : orders.map(o => <OrderRow key={o.id} order={o} />)}
+            <Pagination page={page} totalPages={totalPages(ordersListCount)} buildUrl={buildUrl}/>
           </div>
         )}
 
@@ -224,17 +252,19 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
             {!reviews?.length
               ? <div className="text-center py-12 text-ink-3">No reviews yet</div>
               : reviews.map(r => <ReviewRow key={r.id} review={r} />)}
+            <Pagination page={page} totalPages={totalPages(reviewsCount)} buildUrl={buildUrl}/>
           </div>
         )}
 
         {tab === 'audit' && (
           <div className="card card-body">
-            <h2 className="font-bold mb-4">Last 50 Admin Actions</h2>
+            <h2 className="font-bold mb-4">Admin Actions</h2>
             <div className="space-y-2">
               {!audit?.length
                 ? <div className="text-center py-8 text-ink-3">No admin actions recorded yet</div>
                 : audit.map(a => <AuditRow key={a.id} log={a} />)}
             </div>
+            <Pagination page={page} totalPages={totalPages(auditCount)} buildUrl={buildUrl}/>
           </div>
         )}
         </div>
