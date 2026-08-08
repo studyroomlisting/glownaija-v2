@@ -40,6 +40,10 @@ export async function createBooking(formData: FormData) {
   const { data: service } = await supabase.from('services')
     .select('price').eq('id', service_id).single()
   const deposit = service ? Math.round(service.price * 0.25) : 0
+  // Stripe won't create a checkout session for a £0 line item, and there's nothing
+  // to actually collect — so a booking with no deposit due is confirmed immediately
+  // rather than left 'pending' waiting on a payment step that can't happen.
+  const noDepositDue = deposit <= 0
 
   const reference = generateRef('GNB')
 
@@ -47,8 +51,8 @@ export async function createBooking(formData: FormData) {
     salon_id, customer_id: user.id,
     service_id: service_id || null,
     booking_date: date, time_slot,
-    status: 'pending', reference,
-    deposit_amount: deposit, deposit_paid: false,
+    status: noDepositDue ? 'confirmed' : 'pending', reference,
+    deposit_amount: deposit, deposit_paid: noDepositDue,
     notes: notes || null,
   }).select().single()
 

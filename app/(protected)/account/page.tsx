@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: { tab?: string; msg?: string }
+  searchParams: { tab?: string; msg?: string; booking_paid?: string; payment_error?: string }
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -138,6 +138,12 @@ export default async function AccountPage({
       )}
       {searchParams.msg === 'booking_cancelled' && (
         <div className="alert-success mb-4">Booking cancelled.</div>
+      )}
+      {searchParams.booking_paid === '1' && (
+        <div className="alert-success mb-4">✅ Payment received — your booking is confirmed!</div>
+      )}
+      {searchParams.payment_error === '1' && (
+        <div className="alert-error mb-4">Something went wrong starting your payment. Please try again, or contact support if this keeps happening.</div>
       )}
 
       {/* ── OVERVIEW ─────────────────────────────────────────────────────── */}
