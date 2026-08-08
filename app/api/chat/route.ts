@@ -54,6 +54,11 @@ export async function POST(request: NextRequest) {
   rateLimits.set(ip, [...hits, now])
 
   try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('[Glow AI error] ANTHROPIC_API_KEY is not set')
+      return NextResponse.json({ error: 'AI service not configured.' }, { status: 500 })
+    }
+
     const { messages, context } = await request.json()
     if (!messages?.length) {
       return NextResponse.json({ error: 'No messages provided' }, { status: 400 })
@@ -79,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await getClient().messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5',
       max_tokens: 800,
       system: systemPrompt,
       messages: validMessages,
@@ -94,9 +99,15 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error('[Glow AI error]', error?.message)
+    console.error('[Glow AI error]', error?.status, error?.message)
     if (error?.status === 401) {
       return NextResponse.json({ error: 'AI service not configured.' }, { status: 500 })
+    }
+    if (error?.status === 404) {
+      return NextResponse.json({ error: 'AI model unavailable — please contact support.' }, { status: 500 })
+    }
+    if (error?.status === 429) {
+      return NextResponse.json({ error: 'Glow AI is a bit busy right now. Please try again in a moment.' }, { status: 429 })
     }
     return NextResponse.json({ error: 'Glow AI is temporarily unavailable. Please try again.' }, { status: 500 })
   }
