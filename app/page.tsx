@@ -8,7 +8,7 @@ import Header            from '@/components/layout/Header'
 import Footer            from '@/components/layout/Footer'
 import SalonCard         from '@/components/salon/SalonCard'
 import ProductCard       from '@/components/shop/ProductCard'
-import ScrollRow         from '@/components/home/ScrollRow'
+import Testimonials      from '@/components/layout/Testimonials'
 import { ukDateString }  from '@/lib/utils'
 
 export const revalidate = 3600 // revalidate hourly
@@ -50,9 +50,9 @@ export default async function HomePage() {
   ]
 
   const testimonials = [
-    { name:'Adaeze O.', city:'London', text:'Finally found a braider who understands 4C hair! Booked through GlowNaija and the experience was seamless.', rating:5, service:'Knotless Braids' },
-    { name:'Funmi B.', city:'Birmingham', text:'The salon I found does the most beautiful locs installations. GlowNaija made it so easy to find and book.', rating:5, service:'Starter Locs' },
-    { name:'Kezia M.', city:'Manchester', text:'Brilliant platform. I\'ve discovered so many amazing Afro-Caribbean salons near me I didn\'t know existed.', rating:5, service:'Wig Installation' },
+    { name:'Adaeze O.', initial:'A', meta:'Knotless Braids · London', text:'Finally found a braider who understands 4C hair! Booked through GlowNaija and the experience was seamless.', rating:5 },
+    { name:'Funmi B.', initial:'F', meta:'Starter Locs · Birmingham', text:'The salon I found does the most beautiful locs installations. GlowNaija made it so easy to find and book.', rating:5 },
+    { name:'Kezia M.', initial:'K', meta:'Wig Installation · Manchester', text:'Brilliant platform. I\'ve discovered so many amazing Afro-Caribbean salons near me I didn\'t know existed.', rating:5 },
   ]
 
   return (
@@ -308,29 +308,7 @@ export default async function HomePage() {
               <p className="text-2xs font-bold uppercase tracking-widest text-rose mb-2">Real Clients</p>
               <h2 className="text-3xl font-black">What Our Community Says</h2>
             </div>
-            <ScrollRow>
-              {testimonials.map(({ name, city, text, rating, service }) => (
-                <div key={name} className="snap-start shrink-0 w-[280px] sm:w-[320px] card card-body">
-                  <div className="text-gold text-lg mb-3">{'★'.repeat(rating)}</div>
-                  <p className="text-ink-2 text-sm leading-relaxed mb-4 italic">"{text}"</p>
-                  <div className="flex items-center gap-3 pt-3 border-t border-bdr">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose to-gold flex items-center justify-center text-white text-xs font-black flex-shrink-0">
-                      {name[0]}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm">{name}</p>
-                      <p className="text-xs text-ink-3">{service} · {city}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </ScrollRow>
-            {/* decorative pagination dots — purely presentational, mirrors the source design */}
-            <div className="flex justify-center gap-1.5 mt-6" aria-hidden="true">
-              {testimonials.map((_, i) => (
-                <span key={i} className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-rose w-4' : 'bg-bdr'} transition-all`} />
-              ))}
-            </div>
+            <Testimonials testimonials={testimonials}/>
           </div>
         </section>
 

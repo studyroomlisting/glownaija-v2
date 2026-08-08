@@ -174,14 +174,32 @@ export default function Header() {
             </div>
           )}
 
-          {isOwner && (
-            <Link href="/dashboard" className="hidden md:flex btn btn-outline btn-sm ml-1">Dashboard</Link>
-          )}
-          {profile?.is_admin && (
-            <Link href="/admin" className="hidden md:flex btn btn-sm bg-ink text-white">Admin</Link>
-          )}
-
-          {user ? (
+          {(isOwner || profile?.is_admin) && user ? (
+            <div className="relative hidden md:block" ref={accountMenuRef}>
+              <button onClick={() => setAccountMenuOpen(v => !v)} aria-label="Account menu" aria-haspopup="true" aria-expanded={accountMenuOpen}
+                className={`flex items-center gap-1.5 btn btn-sm ml-1 ${profile?.is_admin ? 'bg-ink text-white' : 'btn-outline'}`}>
+                {profile?.is_admin ? 'Admin' : 'Dashboard'}
+                <span className={`text-2xs transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`}>▾</span>
+              </button>
+              {accountMenuOpen && (
+                <div className="absolute right-0 top-11 w-52 bg-white rounded-2xl shadow-xl border border-bdr overflow-hidden z-50">
+                  <div className="px-4 py-3 border-b border-bdr">
+                    <p className="text-sm font-bold text-ink truncate">{displayName || 'My Account'}</p>
+                    <p className="text-xs text-ink-3 truncate">{profile?.email || user?.email}</p>
+                  </div>
+                  <Link href={profile?.is_admin ? '/admin' : '/dashboard'} onClick={() => setAccountMenuOpen(false)}
+                    className="block px-4 py-2.5 text-sm font-semibold text-ink hover:bg-page-2 transition-colors">
+                    {profile?.is_admin ? '🛠 Admin Panel' : '📊 Dashboard'}
+                  </Link>
+                  <Link href="/account" onClick={() => setAccountMenuOpen(false)}
+                    className="block px-4 py-2.5 text-sm font-semibold text-ink hover:bg-page-2 transition-colors">My Account</Link>
+                  <form action={signOut}>
+                    <button className="w-full text-left px-4 py-2.5 text-sm font-semibold text-rose hover:bg-page-2 transition-colors">Sign out</button>
+                  </form>
+                </div>
+              )}
+            </div>
+          ) : user ? (
             <div className="relative hidden md:block" ref={accountMenuRef}>
               <button onClick={() => setAccountMenuOpen(v => !v)} aria-label="Account menu" aria-haspopup="true" aria-expanded={accountMenuOpen}
                 className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-page-2 transition-colors overflow-hidden">
@@ -231,6 +249,7 @@ export default function Header() {
           })}
 
           {isOwner  && <Link href="/dashboard" className="btn btn-outline btn-sm justify-center mt-3" onClick={() => setMobileOpen(false)}>Dashboard</Link>}
+          {profile?.is_admin && <Link href="/admin" className="btn btn-sm bg-ink text-white justify-center mt-2" onClick={() => setMobileOpen(false)}>Admin Panel</Link>}
 
           {user ? (
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-bdr">

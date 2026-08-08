@@ -23,7 +23,7 @@ const TRUST_ROW: [string, string, string][] = [
 
 export default function Footer() {
   return (
-    <footer className="bg-ink text-white mt-16 relative">
+    <footer className="bg-ink text-white relative">
       <div className="h-1 bg-gradient-to-r from-rose via-gold to-rose" />
 
       <div className="container pt-14 pb-10 grid grid-cols-2 md:grid-cols-6 gap-x-6 gap-y-10">
