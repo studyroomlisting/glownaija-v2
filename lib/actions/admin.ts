@@ -115,9 +115,28 @@ export async function updateOrderStatus(orderId: string, status: string) {
   try {
     const allowed = ['pending','paid','shipped','delivered','cancelled','refunded']
     if (!allowed.includes(status)) return { error: 'Invalid status' }
+    const { data: order } = await supabase.from('orders').select('*').eq('id', orderId).single()
     const { error } = await supabase.from('orders').update({ status }).eq('id', orderId)
     if (error) return { error: error.message }
     await supabase.from('audit_logs').insert({ user_id: user.id, action: `order_${status}`, entity_type: 'order', entity_id: orderId })
+
+    // Refund confirmation — customer previously had no way to know a refund
+    // happened except by noticing the order status changed on the site.
+    if (status === 'refunded' && order) {
+      try {
+        const customerAuth = await supabase.auth.admin.getUserById(order.customer_id)
+        const email = customerAuth.data.user?.email
+        if (email) {
+          const { sendRefundConfirmation } = await import('@/lib/email')
+          await sendRefundConfirmation({
+            email, firstName: order.full_name?.split(' ')[0] || 'there',
+            reference: order.reference, amount: order.total,
+            itemDescription: `Order ${order.reference}`,
+          })
+        }
+      } catch { /* non-fatal — the status update itself already succeeded above */ }
+    }
+
     revalidatePath('/admin')
     return { success: true }
   } catch (err: any) {

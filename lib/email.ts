@@ -477,3 +477,34 @@ export async function sendEventCreatedAlert(opts: {
   `)
   return send(adminEmail, `🎉 New Event: ${eventTitle} — ${city}`, html)
 }
+
+// ── Generic admin alert — reused for new bookings, cancellations, refunds, etc. ──
+export async function sendAdminAlert(opts: {
+  adminEmail: string; title: string; message: string; link?: string
+}) {
+  const { adminEmail, title, message, link } = opts
+  const html = base(`
+    ${h2(title)}
+    ${p(message)}
+    ${link ? btn('View in Admin Panel', link.startsWith('http') ? link : `${APP}${link}`) : ''}
+  `)
+  return send(adminEmail, `${title} — GlowNaija Admin`, html)
+}
+
+// ── Refund confirmation (to customer) ─────────────────────────────────────────
+export async function sendRefundConfirmation(opts: {
+  email: string; firstName: string; reference: string; amount: number; itemDescription: string
+}) {
+  const { email, firstName, reference, amount, itemDescription } = opts
+  const html = base(`
+    ${h2('💷 Refund Issued')}
+    ${p(`Hi ${firstName}, your refund for <strong>${itemDescription}</strong> has been processed.`)}
+    ${box(`
+      ${row('Reference', reference)}
+      ${row('Amount',    `£${(amount/100).toFixed(2)}`)}
+    `)}
+    ${p('It can take 5–10 business days to appear back on your original payment method, depending on your bank.', true)}
+    ${btn('View Order History', `${APP}/account?tab=orders`)}
+  `)
+  return send(email, `💷 Refund Issued — ${reference}`, html)
+}

@@ -166,6 +166,29 @@ export async function submitReview(formData: FormData) {
   })
 
   if (error) return { error: 'Could not submit review. Please try again.' }
+
+  // Owner review-notification email was built earlier but never actually wired
+  // up to anything — this is the only place a review gets created.
+  try {
+    const { data: salon } = await supabase.from('salons').select('name,owner_id,email').eq('id', salon_id).single()
+    const { data: reviewerProf } = await supabase.from('profiles').select('first_name,last_name').eq('id', user.id).single()
+    if (salon) {
+      const { createAdminClient } = await import('@/lib/supabase/server')
+      const adminClient = await createAdminClient()
+      const ownerAuth = await adminClient.auth.admin.getUserById(salon.owner_id)
+      const ownerEmail = ownerAuth.data.user?.email || salon.email
+      if (ownerEmail) {
+        const { sendNewReviewNotification } = await import('@/lib/email')
+        await sendNewReviewNotification({
+          ownerEmail, salonName: salon.name,
+          reviewerName: reviewerProf?.first_name ? `${reviewerProf.first_name} ${reviewerProf.last_name || ''}`.trim() : 'A customer',
+          rating, reviewText: review_text,
+          serviceName: (formData.get('service_booked') as string) || undefined,
+        })
+      }
+    }
+  } catch { /* non-fatal — the review itself already saved successfully above */ }
+
   revalidatePath(`/salons/${formData.get('slug')}`)
   return { success: true }
 }
