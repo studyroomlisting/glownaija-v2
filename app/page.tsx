@@ -61,7 +61,14 @@ export default async function HomePage() {
       <main>
 
         {/* ── HERO ──────────────────────────────────────────────────────── */}
-        <section className="relative bg-gradient-to-br from-ink via-purple-950 to-ink overflow-hidden pt-16 pb-28 md:pb-32">
+        <section className="relative overflow-hidden pt-16 pb-28 md:pb-32">
+          {/* Background image — fills the whole hero */}
+          <div className="absolute inset-0">
+            <Image src="/assets/images/hero-salon.png" alt="Modern salon interior" fill priority quality={90} sizes="100vw" className="object-cover"/>
+          </div>
+          {/* Fade overlay: opaque (image hidden) on the left where the text sits,
+              fading to fully transparent (image fully visible) on the right. */}
+          <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/95 md:via-ink/80 to-ink/10 md:to-transparent"/>
           <div className="absolute inset-0 opacity-10" style={{backgroundImage:'radial-gradient(circle at 15% 30%, #E8607A 0%, transparent 45%), radial-gradient(circle at 85% 70%, #D4AF37 0%, transparent 45%)' }}/>
 
           <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
@@ -100,14 +107,9 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right: hero photo */}
-            <div className="hidden lg:flex justify-center relative">
-              <div className="absolute w-[420px] h-[420px] rounded-full border border-rose/20"/>
-              <div className="absolute w-[340px] h-[340px] rounded-full border border-gold/20"/>
-              <div className="relative w-[380px] h-[460px] rounded-[2rem] overflow-hidden shadow-2xl">
-                <Image src="/assets/images/hero-salon.png" alt="Modern salon interior" fill priority quality={90} sizes="380px" className="object-cover"/>
-              </div>
-            </div>
+            {/* Right side intentionally empty — the salon photo shows through here
+                as the fading background image itself, not a separate boxed photo. */}
+            <div className="hidden lg:block" aria-hidden="true"/>
           </div>
         </section>
 
