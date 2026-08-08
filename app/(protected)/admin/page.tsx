@@ -12,11 +12,12 @@ import ProductForm from '@/components/admin/ProductForm'
 import ProductRow  from '@/components/admin/ProductRow'
 import StatsCard from '@/components/dashboard/StatsCard'
 import DashboardSidebar from '@/components/layout/DashboardSidebar'
+import Pagination from '@/components/layout/Pagination'
 import { signOut } from '@/lib/actions/auth'
 import { expireStaleBookings } from '@/lib/bookings-expiry'
 import { fmtPrice } from '@/lib/utils'
 
-export default async function AdminPage({ searchParams }: { searchParams: { tab?: string; status?: string; edit?: string } }) {
+export default async function AdminPage({ searchParams }: { searchParams: { tab?: string; status?: string; edit?: string; upage?: string; salpage?: string; bkpage?: string; opage?: string; rpage?: string; apage?: string; ppage?: string } }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
@@ -56,15 +57,35 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
   const revenue30d = (recentBookings || []).reduce((s, b) => s + (b.deposit_amount || 0), 0)
                     + (recentOrders   || []).reduce((s, o) => s + (o.total || 0), 0)
 
-  let salonsQuery = supabase.from('salons').select('*').order('created_at', { ascending: false }).limit(30)
+  const PER_PAGE = 15
+  const pg = (v?: string) => Math.max(1, parseInt(v || '1'))
+  const rangeFor = (p: number) => [(p - 1) * PER_PAGE, p * PER_PAGE - 1] as const
+
+  const upage = pg(searchParams.upage), salpage = pg(searchParams.salpage), bkpage = pg(searchParams.bkpage)
+  const opage = pg(searchParams.opage), rpage = pg(searchParams.rpage), apage = pg(searchParams.apage), ppage = pg(searchParams.ppage)
+
+  let salonsQuery = supabase.from('salons').select('*', { count: 'exact' }).order('created_at', { ascending: false })
   if (searchParams.status) salonsQuery = salonsQuery.eq('listing_status', searchParams.status)
-  const { data: salons }   = await salonsQuery
-  const { data: users }    = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(30)
-  const { data: bookings } = await supabase.from('bookings').select('*,salons(name),profiles(first_name,last_name,email)').order('created_at', { ascending: false }).limit(30)
-  const { data: orders }   = await supabase.from('orders').select('*,profiles(first_name,last_name,email)').order('created_at', { ascending: false }).limit(30)
-  const { data: reviews }  = await supabase.from('reviews').select('*,profiles(first_name,last_name),salons(name)').order('created_at', { ascending: false }).limit(30)
-  const { data: audit }    = await supabase.from('audit_logs').select('*,profiles(first_name,last_name)').order('created_at', { ascending: false }).limit(50)
-  const { data: products } = await supabase.from('products').select('*').order('created_at', { ascending: false }).limit(50)
+  salonsQuery = salonsQuery.range(...rangeFor(salpage))
+  const { data: salons, count: salonsTotal } = await salonsQuery
+
+  const [
+    { data: users,    count: usersTotal },
+    { data: bookings, count: bookingsTotal },
+    { data: orders,   count: ordersTotal },
+    { data: reviews,  count: reviewsTotal },
+    { data: audit,    count: auditTotal },
+    { data: products, count: productsTotal },
+  ] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(...rangeFor(upage)),
+    supabase.from('bookings').select('*,salons(name),profiles(first_name,last_name,email)', { count: 'exact' }).order('created_at', { ascending: false }).range(...rangeFor(bkpage)),
+    supabase.from('orders').select('*,profiles(first_name,last_name,email)', { count: 'exact' }).order('created_at', { ascending: false }).range(...rangeFor(opage)),
+    supabase.from('reviews').select('*,profiles(first_name,last_name),salons(name)', { count: 'exact' }).order('created_at', { ascending: false }).range(...rangeFor(rpage)),
+    supabase.from('audit_logs').select('*,profiles(first_name,last_name)', { count: 'exact' }).order('created_at', { ascending: false }).range(...rangeFor(apage)),
+    supabase.from('products').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(...rangeFor(ppage)),
+  ])
+
+  const totalPages = (total: number | null) => Math.max(1, Math.ceil((total || 0) / PER_PAGE))
   const { data: editingProduct } = searchParams.edit
     ? await supabase.from('products').select('*').eq('id', searchParams.edit).single()
     : { data: null }
@@ -160,6 +181,8 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
             {!salons?.length
               ? <div className="text-center py-12 text-ink-3">No salons found</div>
               : salons.map(s => <SalonRow key={s.id} salon={s} />)}
+            <Pagination page={salpage} totalPages={totalPages(salonsTotal)}
+              buildUrl={(p) => `/admin?tab=salons${searchParams.status ? `&status=${searchParams.status}` : ''}&salpage=${p}`}/>
           </div>
         )}
 
@@ -168,6 +191,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
             {!users?.length
               ? <div className="text-center py-12 text-ink-3">No users yet</div>
               : users.map(u => <UserRow key={u.id} profile={{ ...u, banned: bannedIds.has(u.id) }} isSelf={u.id === user.id} />)}
+            <Pagination page={upage} totalPages={totalPages(usersTotal)} buildUrl={(p) => `/admin?tab=users&upage=${p}`}/>
           </div>
         )}
 
@@ -181,7 +205,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
               <ProductForm key={editingProduct?.id || 'new'} product={editingProduct} />
             </div>
             <div>
-              <h2 className="font-bold text-lg mb-3">All Products ({products?.length || 0})</h2>
+              <h2 className="font-bold text-lg mb-3">All Products ({productsTotal || 0})</h2>
               {!products?.length ? (
                 <div className="text-center py-12 text-ink-3">No products yet — add your first one.</div>
               ) : (
@@ -189,6 +213,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
                   {products.map(p => <ProductRow key={p.id} product={p} />)}
                 </div>
               )}
+              <Pagination page={ppage} totalPages={totalPages(productsTotal)} buildUrl={(p) => `/admin?tab=products&ppage=${p}`}/>
             </div>
           </div>
         )}
@@ -208,6 +233,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
                   </div>
                 </div>
               ))}
+            <Pagination page={bkpage} totalPages={totalPages(bookingsTotal)} buildUrl={(p) => `/admin?tab=bookings&bkpage=${p}`}/>
           </div>
         )}
 
@@ -216,6 +242,7 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
             {!orders?.length
               ? <div className="text-center py-12 text-ink-3">No orders yet</div>
               : orders.map(o => <OrderRow key={o.id} order={o} />)}
+            <Pagination page={opage} totalPages={totalPages(ordersTotal)} buildUrl={(p) => `/admin?tab=orders&opage=${p}`}/>
           </div>
         )}
 
@@ -224,17 +251,19 @@ export default async function AdminPage({ searchParams }: { searchParams: { tab?
             {!reviews?.length
               ? <div className="text-center py-12 text-ink-3">No reviews yet</div>
               : reviews.map(r => <ReviewRow key={r.id} review={r} />)}
+            <Pagination page={rpage} totalPages={totalPages(reviewsTotal)} buildUrl={(p) => `/admin?tab=reviews&rpage=${p}`}/>
           </div>
         )}
 
         {tab === 'audit' && (
           <div className="card card-body">
-            <h2 className="font-bold mb-4">Last 50 Admin Actions</h2>
+            <h2 className="font-bold mb-4">Admin Actions</h2>
             <div className="space-y-2">
               {!audit?.length
                 ? <div className="text-center py-8 text-ink-3">No admin actions recorded yet</div>
                 : audit.map(a => <AuditRow key={a.id} log={a} />)}
             </div>
+            <Pagination page={apage} totalPages={totalPages(auditTotal)} buildUrl={(p) => `/admin?tab=audit&apage=${p}`}/>
           </div>
         )}
         </div>

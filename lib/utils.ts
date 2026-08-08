@@ -72,6 +72,22 @@ export function isValidPhone(phone: string): boolean {
   return /^[0-9+\s()\-]{7,20}$/.test(phone)
 }
 
+/**
+ * UK phone numbers only — this platform is UK-only, so salon contact numbers
+ * are validated against the UK national format specifically, not just "looks
+ * like a phone number." Accepts 07700 900000, +44 7700 900000, 020 7946 0958,
+ * +442079460958, etc. (spaces/hyphens/parens are stripped before checking).
+ */
+export function isValidUKPhone(phone: string): boolean {
+  const cleaned = phone.replace(/[\s\-()]/g, '')
+  return /^(?:\+44\d{10}|0\d{10})$/.test(cleaned)
+}
+
+/** Business/salon name — letters, spaces, and basic name punctuation only (no digits or other symbols), per explicit product requirement. */
+export function isValidBusinessName(name: string): boolean {
+  return /^[A-Za-z][A-Za-z\s'.-]{1,79}$/.test(name.trim())
+}
+
 export function isValidName(name: string): boolean {
   return /^[A-Za-z][A-Za-z\s'.-]{1,59}$/.test(name.trim())
 }

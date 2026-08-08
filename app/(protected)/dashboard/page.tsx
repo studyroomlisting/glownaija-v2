@@ -8,6 +8,7 @@ import PhotoUpload        from '@/components/dashboard/PhotoUpload'
 import ReviewCard         from '@/components/salon/ReviewCard'
 import ActionForm         from '@/components/dashboard/ActionForm'
 import ActionButton       from '@/components/dashboard/ActionButton'
+import Pagination         from '@/components/layout/Pagination'
 import DashboardSidebar   from '@/components/layout/DashboardSidebar'
 import { addService, updateProfile, updateHours, updateEnquiryStatus, deleteService, toggleSalonPublished } from '@/lib/actions/dashboard'
 import { signOut } from '@/lib/actions/auth'
@@ -19,7 +20,7 @@ export const dynamic = 'force-dynamic'
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { tab?: string; bstatus?: string; salon?: string }
+  searchParams: { tab?: string; bstatus?: string; salon?: string; bpage?: string }
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -67,6 +68,10 @@ export default async function DashboardPage({
   const revTrend  = revLast > 0 ? Math.round((revMonth - revLast) / revLast * 100) : 0
 
   const bFiltered = bfilter === 'all' ? bookings : bookings?.filter(b => b.status === bfilter)
+  const BOOKINGS_PER_PAGE = 10
+  const bpage = Math.max(1, parseInt(searchParams.bpage || '1'))
+  const bTotalPages = Math.max(1, Math.ceil((bFiltered?.length || 0) / BOOKINGS_PER_PAGE))
+  const bPaged = bFiltered?.slice((bpage - 1) * BOOKINGS_PER_PAGE, bpage * BOOKINGS_PER_PAGE)
 
   // ── Monthly analytics ────────────────────────────────────────────────────
   const monthlyData: Record<string, { bookings: number; revenue: number }> = {}
@@ -462,7 +467,7 @@ export default async function DashboardPage({
                 <input type="hidden" name="salon_id" value={salon.id}/>
                 <div>
                   <label className="label">Salon Name *</label>
-                  <input name="name" className="input" defaultValue={salon.name} required minLength={2} maxLength={100}/>
+                  <input name="name" className="input" defaultValue={salon.name} required minLength={2} maxLength={80} pattern="[A-Za-z][A-Za-z\s'.-]{1,79}" title="Letters only — no numbers or symbols"/>
                 </div>
                 <div>
                   <label className="label">Description <span className="font-normal text-ink-3">(recommended, 30+ characters to complete this step)</span></label>
@@ -471,8 +476,8 @@ export default async function DashboardPage({
                     defaultValue={salon.description || ''}/>
                 </div>
                 <div>
-                  <label className="label">Street Address</label>
-                  <input name="address" className="input" placeholder="e.g. 45 Rye Lane" defaultValue={salon.address || ''}/>
+                  <label className="label">Street Address *</label>
+                  <input name="address" className="input" placeholder="e.g. 45 Rye Lane" defaultValue={salon.address || ''} required/>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -480,8 +485,8 @@ export default async function DashboardPage({
                     <input name="area" className="input" placeholder="e.g. Peckham" defaultValue={salon.area} required/>
                   </div>
                   <div>
-                    <label className="label">Postcode</label>
-                    <input name="postcode" className="input" placeholder="SE15 5DT" style={{textTransform:'uppercase'}} pattern="[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][A-Za-z]{2}" title="Enter a valid UK postcode" defaultValue={salon.postcode || ''}/>
+                    <label className="label">Postcode *</label>
+                    <input name="postcode" className="input" placeholder="SE15 5DT" style={{textTransform:'uppercase'}} pattern="[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][A-Za-z]{2}" title="Enter a valid UK postcode" defaultValue={salon.postcode || ''} required/>
                   </div>
                 </div>
                 <div>
@@ -494,8 +499,8 @@ export default async function DashboardPage({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="label">Phone</label>
-                    <input name="phone" type="tel" className="input" defaultValue={salon.phone || ''} placeholder="+44 7700 900000" pattern="[0-9+\s()\-]{7,20}" title="Digits, spaces, +, -, () only"/>
+                    <label className="label">Phone *</label>
+                    <input name="phone" type="tel" className="input" defaultValue={salon.phone || ''} placeholder="+44 7700 900000" pattern="(\+44\s?|0)7\d{3}\s?\d{6}|(\+44\s?|0)[1-3]\d{2,4}\s?\d{5,6}" title="Enter a valid UK phone number" required/>
                   </div>
                   <div>
                     <label className="label">Contact Email</label>
@@ -722,7 +727,7 @@ export default async function DashboardPage({
               </div>
             ) : (
               <div className="space-y-3">
-                {bFiltered.map(b => (
+                {bPaged.map(b => (
                   <div key={b.id} className="card card-body">
                     <div className="flex justify-between items-start flex-wrap gap-3 mb-3">
                       <div>
@@ -761,6 +766,8 @@ export default async function DashboardPage({
                 ))}
               </div>
             )}
+            <Pagination page={bpage} totalPages={bTotalPages}
+              buildUrl={(p) => `/dashboard?salon=${salon.id}&tab=bookings&bstatus=${bfilter}&bpage=${p}`}/>
           </div>
         )}
 

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect }       from 'next/navigation'
 import { createClient }   from '@/lib/supabase/server'
-import { isValidEmail, isValidPhone, isValidUKPostcode, normalizeSocialUrl, normalizeWhatsApp } from '@/lib/utils'
+import { isValidEmail, isValidPhone, isValidUKPhone, isValidUKPostcode, isValidBusinessName, normalizeSocialUrl, normalizeWhatsApp } from '@/lib/utils'
 
 // Every action below verifies ownership against the SPECIFIC salon_id passed in,
 // not just "the salon this owner has" — a single owner can now have multiple
@@ -86,14 +86,18 @@ export async function updateProfile(formData: FormData) {
     const tagsRaw   = (formData.get('tags') as string || '').split(',').map(t => t.trim()).filter(Boolean)
 
     if (!name || name.length < 2) return { error: 'Salon name is required (min 2 characters).' }
-    if (name.length > 100)        return { error: 'Salon name must be under 100 characters.' }
+    if (name.length > 80)         return { error: 'Salon name must be under 80 characters.' }
+    if (!isValidBusinessName(name)) return { error: 'Salon name should only contain letters (no numbers or symbols).' }
     if (!area)                    return { error: 'Area is required.' }
     if (area.length > 100)        return { error: 'Area must be under 100 characters.' }
+    if (!address)                 return { error: 'Street address is required.' }
     if (address.length > 200)     return { error: 'Address must be under 200 characters.' }
     if (desc.length > 1500)       return { error: 'Description must be under 1500 characters.' }
-    if (phone && !isValidPhone(phone))         return { error: 'Please enter a valid phone number.' }
+    if (!phone)                   return { error: 'Phone number is required.' }
+    if (!isValidUKPhone(phone))   return { error: 'Please enter a valid UK phone number, e.g. 07700 900000 or 020 7946 0958.' }
     if (email && !isValidEmail(email))         return { error: 'Please enter a valid email address.' }
-    if (postcode && !isValidUKPostcode(postcode)) return { error: 'Please enter a valid UK postcode.' }
+    if (!postcode)                 return { error: 'Postcode is required.' }
+    if (!isValidUKPostcode(postcode)) return { error: 'Please enter a valid UK postcode, e.g. SE15 5DT.' }
     if (website && !/^https?:\/\/.+\..+/.test(website)) return { error: 'Website must be a full URL, e.g. https://yoursalon.co.uk' }
     if (instagram && !/^[a-zA-Z0-9._]{1,60}$/.test(instagram)) return { error: 'Instagram handle looks invalid — paste just your username or profile link.' }
 
