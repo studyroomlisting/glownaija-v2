@@ -22,36 +22,45 @@ export default async function AboutPage() {
   return (
     <div>
       {/* Hero */}
-      <div className="container py-12">
-        <div className="grid lg:grid-cols-2 gap-10 items-center">
-          <div>
-            <span className="badge-pill bg-rose-100 text-rose text-xs font-bold mb-4 inline-flex items-center gap-1">🛡️ About Us</span>
-            <h1 className="text-4xl font-black leading-tight mb-3">
-              Empowering beauty.<br/><span className="text-rose">Connecting you.</span>
-            </h1>
-            <p className="text-ink-3 text-base mb-8 max-w-md">
-              GlowNaija is the UK's trusted platform to discover top salons, book appointments, explore beauty services, and shop your favourites — all in one place.
-            </p>
-            <div className="flex gap-8">
-              {[
-                ['🏅', `${salonCount ? `${salonCount}+` : '1,000+'}`, 'Top Salons'],
-                ['👥', `${userCount ? `${Math.floor(userCount/1000)}K+` : '50K+'}`, 'Happy Customers'],
-                ['📅', `${bookingCount ? `${Math.floor(bookingCount/1000)}K+` : '100K+'}`, 'Appointments Booked'],
-              ].map(([icon, num, label]) => (
-                <div key={label} className="flex items-center gap-2.5">
-                  <span className="w-11 h-11 rounded-full bg-rose-100 flex items-center justify-center text-base flex-shrink-0">{icon}</span>
-                  <div>
-                    <p className="font-black text-lg leading-none">{num}</p>
-                    <p className="text-2xs text-ink-3 mt-0.5">{label}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className="relative overflow-hidden">
+        {/* Background image — fills the whole hero */}
+        <div className="absolute inset-0">
+          <Image src="/assets/images/about-collage.png" alt="GlowNaija — beauty, salons, and skincare" fill priority quality={90} sizes="100vw" className="object-cover"/>
+        </div>
+        {/* Fade overlay: opaque (image hidden) on the left where the text sits,
+            fading to fully transparent (image fully visible) on the right. */}
+        <div className="absolute inset-0 bg-gradient-to-r from-page via-page/95 md:via-page/80 to-page/10 md:to-transparent"/>
 
-          {/* Image collage */}
-          <div className="relative h-96 rounded-3xl overflow-hidden shadow-xl">
-            <Image src="/assets/images/about-collage.png" alt="GlowNaija — beauty, salons, and skincare" fill quality={90} sizes="600px" className="object-cover"/>
+        <div className="container relative z-10 py-12">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <span className="badge-pill bg-rose-100 text-rose text-xs font-bold mb-4 inline-flex items-center gap-1">🛡️ About Us</span>
+              <h1 className="text-4xl font-black leading-tight mb-3">
+                Empowering beauty.<br/><span className="text-rose">Connecting you.</span>
+              </h1>
+              <p className="text-ink-3 text-base mb-8 max-w-md">
+                GlowNaija is the UK's trusted platform to discover top salons, book appointments, explore beauty services, and shop your favourites — all in one place.
+              </p>
+              <div className="flex gap-8">
+                {[
+                  ['🏅', `${salonCount ? `${salonCount}+` : '1,000+'}`, 'Top Salons'],
+                  ['👥', `${userCount ? `${Math.floor(userCount/1000)}K+` : '50K+'}`, 'Happy Customers'],
+                  ['📅', `${bookingCount ? `${Math.floor(bookingCount/1000)}K+` : '100K+'}`, 'Appointments Booked'],
+                ].map(([icon, num, label]) => (
+                  <div key={label} className="flex items-center gap-2.5">
+                    <span className="w-11 h-11 rounded-full bg-rose-100 flex items-center justify-center text-base flex-shrink-0">{icon}</span>
+                    <div>
+                      <p className="font-black text-lg leading-none">{num}</p>
+                      <p className="text-2xs text-ink-3 mt-0.5">{label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right side intentionally empty — the collage photo shows through here
+                as the fading background image itself, not a separate boxed photo. */}
+            <div className="hidden lg:block" aria-hidden="true"/>
           </div>
         </div>
       </div>

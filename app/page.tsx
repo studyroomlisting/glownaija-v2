@@ -355,7 +355,15 @@ export default async function HomePage() {
         </section>
 
         {/* ── SALON OWNER CTA ───────────────────────────────────────────── */}
-        <section className="bg-gradient-to-r from-rose to-purple-700 relative overflow-hidden">
+        <section className="relative overflow-hidden">
+          {/* Background image — fills the whole section */}
+          <div className="absolute inset-0">
+            <Image src="/assets/images/owners-salon.png" alt="Salon interior for owners" fill quality={90} sizes="100vw" className="object-cover"/>
+          </div>
+          {/* Fade overlay: opaque brand gradient on the left where the text sits,
+              fading to fully transparent on the right so the photo shows through. */}
+          <div className="absolute inset-0 bg-gradient-to-r from-rose via-rose/95 md:via-purple-700/85 to-purple-700/20 md:to-transparent"/>
+
           <div className="container py-16 grid lg:grid-cols-2 gap-10 items-center relative z-10">
             <div className="text-center lg:text-left">
               <div className="inline-block bg-white/15 rounded-full px-3 py-1 text-2xs font-bold uppercase tracking-widest text-white mb-4">🏪 For Salon Owners</div>
@@ -383,12 +391,9 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Salon owner photo */}
-            <div className="hidden lg:flex justify-center">
-              <div className="relative w-full max-w-md h-72 rounded-3xl overflow-hidden shadow-2xl">
-                <Image src="/assets/images/owners-salon.png" alt="Salon interior for owners" fill quality={90} sizes="400px" className="object-cover"/>
-              </div>
-            </div>
+            {/* Right side intentionally empty — the salon photo shows through here
+                as the fading background image itself, not a separate boxed photo. */}
+            <div className="hidden lg:block" aria-hidden="true"/>
           </div>
         </section>
 
