@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { signOut } from '@/lib/actions/auth'
+import { useTheme } from '@/hooks/useTheme'
 import type { Profile } from '@/types/database'
 import CartSidebar from '@/components/shop/CartSidebar'
 
@@ -14,6 +15,7 @@ const GLOW_AI_LINKS: [string, string, string][] = [
 ]
 
 export default function Header() {
+  const { theme, toggleTheme } = useTheme()
   const [user, setUser]       = useState<any>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [notifs, setNotifs]   = useState(0)
@@ -132,6 +134,10 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-1.5">
+          <button onClick={toggleTheme} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="hidden sm:flex w-9 h-9 items-center justify-center rounded-full hover:bg-page-2 text-ink-3 transition-colors">
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
           <Link href="/search" className="hidden sm:flex w-9 h-9 items-center justify-center rounded-full hover:bg-page-2 text-ink-3 transition-colors" aria-label="Search">🔍</Link>
 
           <CartSidebar/>
@@ -236,6 +242,10 @@ export default function Header() {
       {/* Mobile nav */}
       {mobileOpen && (
         <div id="mobile-nav" className="md:hidden border-t border-bdr bg-white px-4 py-4 flex flex-col gap-1">
+          <button onClick={toggleTheme}
+            className="flex items-center justify-between text-sm font-semibold py-2.5 px-3 -mx-3 mb-1 rounded-xl border-b border-bdr text-ink-2">
+            <span>{theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}</span>
+          </button>
           {[['/', 'Home'], ['/salons', 'Salons'], ['/shop', 'Shop'], ['/events', 'Events'], ['/about', 'About'], ['/chat', '💬 Chat with Glow AI'], ['/stylist', '✨ AI Stylist Quiz'], ['/wishlist', 'Wishlist']].map(([href, label]) => {
             const active = pathname === href
             return (

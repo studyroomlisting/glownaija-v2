@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import BackToTop from '@/components/layout/BackToTop'
 import { CartProvider } from '@/hooks/useCart'
+import { ThemeProvider } from '@/hooks/useTheme'
 import './globals.css'
 
 const inter = Inter({
@@ -31,13 +32,25 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
+      <head>
+        {/* Runs before paint — sets the dark class immediately from the saved
+            preference (or OS preference on a first visit), so there's no flash
+            of the wrong theme while React hydrates. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('gn_theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body>
         <a href="#main-content" className="skip-link">Skip to content</a>
-        <CartProvider>
-          {children}
-          <BackToTop/>
-          <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-        </CartProvider>
+        <ThemeProvider>
+          <CartProvider>
+            {children}
+            <BackToTop/>
+            <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+          </CartProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -16,7 +16,45 @@
   --bdr:     #E8E0D8;
   --rose-text: #C94D66;      /* AA-safe rose for normal-size text on light backgrounds */
   --ink-3-on-dark: #B8A99A;  /* AA-safe muted text on dark (--ink) surfaces, e.g. footer */
+  --card-bg: #ffffff;
 }
+
+/* ── Dark theme ──────────────────────────────────────────────────────────────
+   Strategy: rather than touching every component file's className (this app has
+   90+ files using text-ink/bg-page/etc.), we override the exact compiled Tailwind
+   utility classes here, scoped under a `.dark` class on <html>. Every existing
+   `bg-page`, `text-ink-3`, `border-bdr`, `bg-white` etc. usage across the whole
+   app becomes dark-mode-aware automatically — zero component files touched, zero
+   risk of missing one. `bg-ink`/`text-white`/brand colors (rose, gold) are
+   intentionally left alone: those are decorative "always dark" or "always white
+   on a colored surface" uses (footer, hero, buttons, active-state pills) that
+   should look the same regardless of theme, not invert.
+
+   Colors reuse the existing warm ink/page tones (not a generic cold gray) so
+   dark mode stays visually consistent with the brand instead of clashing. */
+.dark {
+  --page:    #1C1008; /* = --ink, so the footer/hero (already bg-ink) blend seamlessly */
+  --page-2:  #241708;
+  --bdr:     rgba(255,255,255,0.12);
+  --card-bg: #2A1B10;
+}
+.dark body { background: var(--page); color: #FFF9F5; }
+.dark .text-ink   { color: #FFF9F5 !important; }
+.dark .text-ink-2 { color: #E8DFD5 !important; }
+.dark .text-ink-3 { color: #B8A99A !important; }
+.dark .bg-page    { background-color: var(--page) !important; }
+.dark .bg-page-2  { background-color: var(--page-2) !important; }
+.dark .border-bdr { border-color: var(--bdr) !important; }
+.dark .bg-white   { background-color: var(--card-bg) !important; }
+.dark .card       { background: var(--card-bg); }
+.dark .input      { background: var(--card-bg); color: #FFF9F5; }
+.dark .input::placeholder { color: #8C7B6E; }
+.dark .btn-outline { background: var(--card-bg); color: #FFF9F5; }
+.dark .btn-ghost { color: #FFF9F5; }
+.dark .tab:hover { color: #FFF9F5; }
+/* Rose/gold/green brand accents, bg-ink decorative sections, and text-white on
+   colored surfaces are deliberately NOT overridden above — they already read
+   correctly on a dark background exactly as they do today. */
 
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
@@ -135,7 +173,7 @@ html {
 
   /* Cards */
   .card {
-    background: #ffffff;
+    background: var(--card-bg);
     border-radius: 1rem;
     border: 1px solid var(--bdr);
     overflow: hidden;
