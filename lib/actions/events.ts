@@ -212,3 +212,77 @@ export async function cancelEventRegistration(eventId: string, email: string) {
   revalidatePath('/events')
   return { success: true }
 }
+
+export async function updateEvent(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/signin')
+
+  const event_id = formData.get('event_id') as string
+  const { data: existing } = await supabase.from('events').select('id,organiser_id').eq('id', event_id).single()
+  if (!existing || existing.organiser_id !== user.id) return { error: 'Not authorised to edit this event.' }
+
+  const title      = (formData.get('title')       as string).trim()
+  const date       = formData.get('event_date')   as string
+  const time_start = formData.get('time_start')   as string
+  const time_end   = formData.get('time_end')     as string
+  const venue      = (formData.get('venue')       as string).trim()
+  const city       = formData.get('city')         as string
+  const price      = Math.round(parseFloat(formData.get('price') as string || '0') * 100)
+  const is_free    = formData.get('is_free') === 'on' || price === 0
+  const capacity   = parseInt(formData.get('capacity') as string || '50')
+  const desc       = (formData.get('description') as string || '').trim()
+  const emoji      = (formData.get('emoji')       as string) || '🎉'
+  const event_type = (formData.get('event_type')  as string) || 'workshop'
+  const image_url  = (formData.get('image_url')   as string || '').trim() || null
+
+  if (!title || title.length < 3)
+    return { error: 'Title must be at least 3 characters.' }
+  if (!time_start || !time_end)
+    return { error: 'Start and end times are required.' }
+  if (time_end <= time_start)
+    return { error: 'End time must be after start time.' }
+  if (!venue)
+    return { error: 'Venue is required.' }
+  if (!city)
+    return { error: 'City is required.' }
+  if (isNaN(price) || price < 0)
+    return { error: 'Price cannot be negative.' }
+  if (isNaN(capacity) || capacity < 1 || capacity > 10000)
+    return { error: 'Capacity must be a positive number between 1 and 10,000.' }
+
+  // Can't shrink capacity below the number of tickets already claimed.
+  const { data: current } = await supabase.from('events').select('rsvp_count').eq('id', event_id).single()
+  if (current && capacity < current.rsvp_count)
+    return { error: `Capacity can't be less than the ${current.rsvp_count} ticket(s) already registered.` }
+
+  const { error } = await supabase.from('events').update({
+    title, emoji, description: desc || null, event_type,
+    event_date: date, time_start, time_end, venue, city,
+    price, is_free, capacity, image_url,
+  }).eq('id', event_id)
+
+  if (error) return { error: 'Could not update event. Please try again.' }
+
+  revalidatePath('/events')
+  revalidatePath(`/events/${event_id}`)
+  revalidatePath(`/events/${event_id}/dashboard`)
+  return { success: true }
+}
+
+export async function deleteEvent(eventId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not logged in' }
+
+  const { data: event } = await supabase.from('events').select('id,organiser_id,title').eq('id', eventId).single()
+  if (!event || event.organiser_id !== user.id) return { error: 'Not authorised to delete this event.' }
+
+  // Soft delete — same pattern as services/salons elsewhere in this app, so
+  // past registrations/history referencing this event don't break.
+  const { error } = await supabase.from('events').update({ is_active: false }).eq('id', eventId)
+  if (error) return { error: 'Could not delete event. Please try again.' }
+
+  revalidatePath('/events')
+  redirect('/events')
+}

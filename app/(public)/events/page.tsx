@@ -20,7 +20,14 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
       <div className="container py-8">
         {!events?.length ? <div className="text-center py-16 text-ink-3"><div className="text-5xl mb-4">🎉</div><p className="font-bold">No upcoming events</p></div>
         : <div className="grid-3">{events.map(e=>(
-          <Link key={e.id} href={`/events/${e.id}`} className="card">
+          <div key={e.id} className="card relative">
+            {user?.id === e.organiser_id && (
+              <Link href={`/events/${e.id}/dashboard`}
+                className="absolute top-2 right-2 z-10 badge-pill bg-ink/90 text-white text-2xs font-bold hover:bg-rose transition-colors">
+                ⚙ Manage
+              </Link>
+            )}
+            <Link href={`/events/${e.id}`} className="block">
             <div className="h-36 bg-gradient-to-br from-ink to-purple-800 relative overflow-hidden">
               {e.image_url ? <img src={e.image_url} className="w-full h-full object-cover opacity-80"/> : <div className="absolute inset-0 flex items-center justify-center text-5xl">{e.emoji}</div>}
             </div>
@@ -33,7 +40,8 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                 <span className="text-xs text-ink-3">{e.rsvp_count}/{e.capacity}</span>
               </div>
             </div>
-          </Link>
+            </Link>
+          </div>
         ))}</div>}
       </div>
     </>

@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { registerForEvent } from '@/lib/actions/events'
 import { fmtPrice, ukDateString } from '@/lib/utils'
+import ActionForm from '@/components/dashboard/ActionForm'
+import Link from 'next/link'
 export default async function EventPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
   const { data: e } = await supabase.from('events').select('*').eq('id', params.id).eq('is_active',true).single()
@@ -25,15 +27,24 @@ export default async function EventPage({ params }: { params: { id: string } }) 
         <span>👥 {e.rsvp_count}/{e.capacity} registered</span>
       </div>
       {e.description && <p className="text-ink-2 leading-relaxed mb-8">{e.description}</p>}
+      {user?.id === e.organiser_id && (
+        <div className="card card-body bg-rose-50 border-rose/20 mb-6 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p className="font-bold text-sm">📋 You organised this event</p>
+            <p className="text-xs text-ink-3">Manage registrations, edit details, or cancel it.</p>
+          </div>
+          <Link href={`/events/${e.id}/dashboard`} className="btn btn-primary btn-sm">Manage Event →</Link>
+        </div>
+      )}
       {!isPast && !isFull && (
         <div className="card card-body">
           <h2 className="font-bold text-lg mb-4">Register for this event</h2>
-          <form action={registerForEvent} className="space-y-4">
+          <ActionForm action={registerForEvent} successMessage="You're registered! Check your email for confirmation." className="space-y-4"
+            submitLabel={e.is_free ? 'Register Free →' : `Register — ${fmtPrice(e.price)} →`}>
             <input type="hidden" name="event_id" value={e.id}/>
             <div className="grid grid-cols-2 gap-3"><div><label className="label">Name *</label><input name="name" className="input" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required/></div><div><label className="label">Email *</label><input name="email" type="email" className="input" required/></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="label">Phone</label><input name="phone" type="tel" className="input" pattern="[0-9+\s()\-]{7,20}" title="Digits, spaces, +, -, () only"/></div><div><label className="label">Tickets</label><select name="tickets" className="input">{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}</select></div></div>
-            <button type="submit" className="btn btn-primary w-full justify-center">{e.is_free?'Register Free →':`Register — ${fmtPrice(e.price)} →`}</button>
-          </form>
+          </ActionForm>
         </div>
       )}
       {isFull && <div className="card card-body text-center py-8 text-ink-3"><p className="text-2xl mb-2">😔</p><p className="font-bold">This event is sold out</p></div>}

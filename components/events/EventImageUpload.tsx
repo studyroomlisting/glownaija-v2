@@ -1,8 +1,8 @@
 'use client'
 import { useState, useRef } from 'react'
 
-export default function EventImageUpload() {
-  const [imageUrl, setImageUrl]   = useState('')
+export default function EventImageUpload({ initialUrl }: { initialUrl?: string | null }) {
+  const [imageUrl, setImageUrl]   = useState(initialUrl || '')
   const [uploading, setUploading] = useState(false)
   const [error, setError]         = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
