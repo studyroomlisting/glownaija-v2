@@ -64,8 +64,11 @@ export default async function SalonsPage({ searchParams }: { searchParams: Salon
     { slug: 'nails',    label: 'Nails' },
     { slug: 'makeup',   label: 'Makeup' },
     { slug: 'skincare', label: 'Skincare' },
-    { slug: 'colour',   label: 'Barber' },
+    { slug: 'barber',   label: 'Barber' },
+    { slug: 'bridal',   label: 'Bridal' },
     { slug: 'natural',  label: 'Natural Hair' },
+    { slug: 'colour',   label: 'Colour' },
+    { slug: 'wax',      label: 'Waxing' },
   ]
 
   // Preserves every active filter while overriding only what's passed in — used by
