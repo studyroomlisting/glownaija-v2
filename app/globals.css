@@ -83,6 +83,18 @@ html {
     border-radius: 4px;
   }
 
+  /* Mobile-safe full-height container (used by the Glow AI chat page). 100vh on
+     mobile Safari/Chrome includes the browser's address bar inconsistently —
+     content can be cut off or jump when it shows/hides. 100dvh (dynamic viewport
+     height) accounts for this correctly; 100vh is the fallback for older
+     browsers that don't support dvh yet (an unsupported CSS value is simply
+     ignored, so the previous declaration stands — this only works as plain CSS
+     text, not as a JS style object, since object keys can't duplicate). */
+  .chat-viewport-height {
+    height: calc(100vh - 64px);
+    height: calc(100dvh - 64px);
+  }
+
   /* Skip-to-content link: hidden off-screen until it receives keyboard focus. */
   .skip-link {
     position: absolute;

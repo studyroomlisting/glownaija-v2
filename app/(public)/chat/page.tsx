@@ -148,7 +148,7 @@ export default function GlowAIChatPage() {
   const hasContext = context.hairType || context.city
 
   return (
-    <div className="bg-page" style={{ height: 'calc(100vh - 64px)' }}>
+    <div className="bg-page chat-viewport-height">
       <div className="h-full grid lg:grid-cols-[1fr_320px] gap-4 p-4">
 
         {/* ══ LEFT: Chat panel ══════════════════════════════════════════ */}
