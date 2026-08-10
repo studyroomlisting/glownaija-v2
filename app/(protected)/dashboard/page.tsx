@@ -479,7 +479,7 @@ export default async function DashboardPage({
                   <label className="label">Street Address *</label>
                   <input name="address" className="input" placeholder="e.g. 45 Rye Lane" defaultValue={salon.address || ''} required/>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="label">Area *</label>
                     <input name="area" className="input" placeholder="e.g. Peckham" defaultValue={salon.area} required/>
@@ -497,7 +497,7 @@ export default async function DashboardPage({
                     ))}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="label">Phone *</label>
                     <input name="phone" type="tel" className="input" defaultValue={salon.phone || ''} placeholder="+44 7700 900000" pattern="(\+44\s?|0)7\d{3}\s?\d{6}|(\+44\s?|0)[1-3]\d{2,4}\s?\d{5,6}" title="Enter a valid UK phone number" required/>
@@ -507,7 +507,7 @@ export default async function DashboardPage({
                     <input name="email" type="email" className="input" defaultValue={salon.email || ''}/>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="label">Instagram</label>
                     <div className="relative">
@@ -522,7 +522,7 @@ export default async function DashboardPage({
                 </div>
 
                 <p className="text-2xs font-bold uppercase tracking-wide text-ink-3 pt-2">Social Media <span className="font-normal normal-case text-ink-3">(optional — paste a link or just your handle)</span></p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="label">Facebook</label>
                     <input name="facebook" className="input" defaultValue={salon.facebook || ''} placeholder="facebook.com/yoursalon"/>
@@ -583,7 +583,7 @@ export default async function DashboardPage({
               <ActionForm action={addService} successMessage="Service added!" submitLabel="Add Service →"
                 submitClassName="btn btn-green w-full justify-center py-3.5 mt-4" resetOnSuccess className="space-y-4">
                 <input type="hidden" name="salon_id" value={salon.id}/>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="label">Icon</label>
                     <select name="svc_emoji" className="input text-xl">
@@ -609,7 +609,7 @@ export default async function DashboardPage({
                   <label className="label">Description <span className="font-normal text-ink-3">(optional)</span></label>
                   <input name="svc_desc" className="input" maxLength={200} placeholder="e.g. Any length, includes wash & blow dry"/>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="label">Price (£) *</label>
                     <input name="svc_price" type="number" className="input" min="1" max="9999" step="0.01" required placeholder="e.g. 120"/>
@@ -680,19 +680,21 @@ export default async function DashboardPage({
                 const closed = h?.is_closed ?? (d === 0)
                 const isToday = d === today_dow
                 return (
-                  <div key={d} className={`flex items-center gap-3 py-3 border-b border-bdr last:border-0 ${isToday ? 'bg-rose-50 px-3 -mx-3 rounded-xl' : ''}`}>
-                    <div className={`w-24 flex-shrink-0 text-sm ${isToday ? 'font-black text-rose' : 'font-medium'}`}>
+                  <div key={d} className={`flex items-center gap-3 flex-wrap py-3 border-b border-bdr last:border-0 ${isToday ? 'bg-rose-50 px-3 -mx-3 rounded-xl' : ''}`}>
+                    <div className={`w-20 sm:w-24 flex-shrink-0 text-sm ${isToday ? 'font-black text-rose' : 'font-medium'}`}>
                       {day}{isToday ? ' ◀' : ''}
                     </div>
                     <label className="flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
                       <input name={`closed[${d}]`} type="checkbox" defaultChecked={closed} className="w-4 h-4 accent-rose"/>
                       <span className="text-xs text-ink-3">Closed</span>
                     </label>
-                    <input name={`open[${d}]`} type="time" defaultValue={h?.open_time?.substring(0,5) || '09:00'}
-                      className="input flex-1 py-1.5 text-sm min-w-0"/>
-                    <span className="text-ink-3 text-xs flex-shrink-0">–</span>
-                    <input name={`close[${d}]`} type="time" defaultValue={h?.close_time?.substring(0,5) || '18:00'}
-                      className="input flex-1 py-1.5 text-sm min-w-0"/>
+                    <div className="flex items-center gap-2 flex-1 min-w-[220px]">
+                      <input name={`open[${d}]`} type="time" defaultValue={h?.open_time?.substring(0,5) || '09:00'}
+                        className="input flex-1 py-1.5 text-sm min-w-0"/>
+                      <span className="text-ink-3 text-xs flex-shrink-0">–</span>
+                      <input name={`close[${d}]`} type="time" defaultValue={h?.close_time?.substring(0,5) || '18:00'}
+                        className="input flex-1 py-1.5 text-sm min-w-0"/>
+                    </div>
                   </div>
                 )
               })}

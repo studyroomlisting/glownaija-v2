@@ -18,7 +18,7 @@ export default function ProductForm({ product, onDone }: { product?: Product | n
     >
       {product && <input type="hidden" name="id" value={product.id} />}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label">Product Name *</label>
           <input name="name" className="input" defaultValue={product?.name || ''} required minLength={2} maxLength={150} />
@@ -29,7 +29,7 @@ export default function ProductForm({ product, onDone }: { product?: Product | n
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label">Category *</label>
           <select name="category" className="input" defaultValue={product?.category || CATEGORIES[0]}>
@@ -42,7 +42,7 @@ export default function ProductForm({ product, onDone }: { product?: Product | n
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label">Price (£) *</label>
           <input name="price" type="number" min="0.01" step="0.01" className="input" required
@@ -60,7 +60,7 @@ export default function ProductForm({ product, onDone }: { product?: Product | n
         <textarea name="description" className="input" rows={3} defaultValue={product?.description || ''} maxLength={1000} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label">Ingredients</label>
           <textarea name="ingredients" className="input" rows={2} defaultValue={product?.ingredients || ''} maxLength={1000} />
@@ -73,7 +73,7 @@ export default function ProductForm({ product, onDone }: { product?: Product | n
 
       <ProductPhotoUpload initialImages={product?.images || []} />
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label">Badge Text <span className="font-normal text-ink-3">(optional)</span></label>
           <input name="badge" className="input" defaultValue={product?.badge || ''} placeholder="e.g. New, Bestseller" maxLength={20} />

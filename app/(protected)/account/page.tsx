@@ -471,7 +471,7 @@ export default async function AccountPage({
           <div className="card card-body">
             <h2 className="font-bold text-lg mb-5">Edit Profile</h2>
             <ActionForm action={updateProfile} successMessage="Profile saved!" submitLabel="Save Profile →" className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="label">First Name *</label>
                   <input name="first_name" className="input" defaultValue={profile?.first_name || ''} required maxLength={50} pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only"/>
