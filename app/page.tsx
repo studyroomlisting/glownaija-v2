@@ -22,13 +22,23 @@ export default async function HomePage() {
     { data: events    },
     { count: salonCount },
     { count: userCount  },
+    { data: allServiceTypes },
   ] = await Promise.all([
     supabase.from('salons').select('*').eq('listing_status','approved').eq('is_active',true).eq('is_featured',true).order('rating',{ascending:false}).limit(6),
     supabase.from('products').select('*').eq('is_active',true).order('rating',{ascending:false}).limit(4),
     supabase.from('events').select('*').eq('is_active',true).gte('event_date', ukDateString()).order('event_date').limit(3),
     supabase.from('salons').select('*',{count:'exact',head:true}).eq('is_active',true).eq('listing_status','approved'),
     supabase.from('profiles').select('*',{count:'exact',head:true}),
+    supabase.from('salons').select('service_types').eq('listing_status','approved').eq('is_active',true),
   ])
+
+  // Real per-category salon counts — computed from live data, not hardcoded.
+  const categoryCounts: Record<string, number> = {}
+  for (const row of allServiceTypes || []) {
+    for (const cat of row.service_types || []) {
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
+    }
+  }
 
   const cities = ['London','Birmingham','Manchester','Leeds','Bristol','Nottingham','Leicester','Glasgow','Liverpool','Newcastle']
   const categories = [
@@ -40,8 +50,11 @@ export default async function HomePage() {
     { slug:'skincare', label:'Skincare',   emoji:'🧴',  desc:'Melanin-focused treatments' },
     { slug:'barber',   label:'Barber',     emoji:'💈',  desc:'Afro cuts & fades' },
     { slug:'bridal',   label:'Bridal',     emoji:'💍',  desc:'Full wedding packages' },
+    { slug:'natural',  label:'Natural Hair', emoji:'🌱', desc:'Wash days & protective styles' },
+    { slug:'colour',   label:'Colour',     emoji:'🎨',  desc:'Balayage, vivids & treatments' },
+    { slug:'wax',      label:'Waxing',     emoji:'🪮',  desc:'Waxing & threading' },
   ]
-  const categoryTints = ['bg-rose/10','bg-gold/10','bg-purple-100','bg-blue-100','bg-gn/10','bg-orange-100','bg-page-2','bg-pink-100']
+  const categoryTints = ['bg-rose/10','bg-gold/10','bg-purple-100','bg-blue-100','bg-gn/10','bg-orange-100','bg-page-2','bg-pink-100','bg-rose/10','bg-gold/10','bg-purple-100']
 
   const howItWorks = [
     { step:'01', title:'Search & Discover', desc:'Browse hundreds of Nigerian and Afro-Caribbean salons by city, service, or style.', icon:'🔍' },
@@ -142,14 +155,14 @@ export default async function HomePage() {
             <Link href="/salons" className="text-rose text-sm font-bold hover:underline hidden sm:block">View all categories →</Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {categories.map(({ slug, label, emoji, desc }, i) => (
+            {categories.map(({ slug, label, emoji }, i) => (
               <Link key={slug} href={`/category/${slug}`}
                 className="card card-body text-center group hover:border-rose hover:shadow-lg transition-all">
                 <div className={`icon-badge w-14 h-14 text-2xl mx-auto mb-3 group-hover:scale-110 transition-transform duration-200 ${categoryTints[i % categoryTints.length]}`}>
                   {emoji}
                 </div>
                 <div className="font-bold text-sm mb-1">{label}</div>
-                <div className="text-2xs text-ink-3">{desc}</div>
+                <div className="text-2xs text-ink-3">{categoryCounts[slug] || 0} salon{categoryCounts[slug] === 1 ? '' : 's'}</div>
               </Link>
             ))}
           </div>

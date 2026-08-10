@@ -8,7 +8,7 @@ import SaveButton from '@/components/salon/SaveButton'
 const CATEGORY_LABELS: Record<string, string> = {
   braids: 'Braids', locs: 'Locs', wigs: 'Wigs', nails: 'Nails',
   makeup: 'Makeup', skincare: 'Skincare', barber: 'Barber', bridal: 'Bridal',
-  colour: 'Colour', natural: 'Natural Hair',
+  colour: 'Colour', natural: 'Natural Hair', wax: 'Waxing & Threading',
 }
 
 export default async function CategoryPage({ params, searchParams }: { params: { slug: string }; searchParams: { sort?: string } }) {
