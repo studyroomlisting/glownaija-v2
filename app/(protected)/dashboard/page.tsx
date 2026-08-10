@@ -2,7 +2,7 @@
 import { createClient }   from '@/lib/supabase/server'
 import { redirect }       from 'next/navigation'
 import Link               from 'next/link'
-import { fmtPrice, formatDuration, ukDateString } from '@/lib/utils'
+import { fmtPrice, formatDuration, ukDateString, UK_CITIES } from '@/lib/utils'
 import StatsCard          from '@/components/dashboard/StatsCard'
 import PhotoUpload        from '@/components/dashboard/PhotoUpload'
 import ReviewCard         from '@/components/salon/ReviewCard'
@@ -492,7 +492,7 @@ export default async function DashboardPage({
                 <div>
                   <label className="label">City</label>
                   <select name="city" className="input" defaultValue={salon.city}>
-                    {['London','Birmingham','Manchester','Leeds','Bristol','Sheffield','Nottingham','Leicester','Liverpool','Newcastle','Glasgow','Edinburgh','Cardiff','Other'].map(c => (
+                    {[...UK_CITIES, 'Other'].map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>

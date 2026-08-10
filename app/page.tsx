@@ -9,7 +9,7 @@ import Footer            from '@/components/layout/Footer'
 import SalonCard         from '@/components/salon/SalonCard'
 import ProductCard       from '@/components/shop/ProductCard'
 import Testimonials      from '@/components/layout/Testimonials'
-import { ukDateString }  from '@/lib/utils'
+import { ukDateString, UK_CITIES }  from '@/lib/utils'
 
 export const revalidate = 3600 // revalidate hourly
 
@@ -29,18 +29,26 @@ export default async function HomePage() {
     supabase.from('events').select('*').eq('is_active',true).gte('event_date', ukDateString()).order('event_date').limit(3),
     supabase.from('salons').select('*',{count:'exact',head:true}).eq('is_active',true).eq('listing_status','approved'),
     supabase.from('profiles').select('*',{count:'exact',head:true}),
-    supabase.from('salons').select('service_types').eq('listing_status','approved').eq('is_active',true),
+    supabase.from('salons').select('city,service_types').eq('listing_status','approved').eq('is_active',true),
   ])
 
   // Real per-category salon counts — computed from live data, not hardcoded.
   const categoryCounts: Record<string, number> = {}
+  // Real per-city salon counts — same idea, for the "Popular Cities" pills.
+  const cityCounts: Record<string, number> = {}
   for (const row of allServiceTypes || []) {
     for (const cat of row.service_types || []) {
       categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
     }
+    if (row.city) cityCounts[row.city] = (cityCounts[row.city] || 0) + 1
   }
 
-  const cities = ['London','Birmingham','Manchester','Leeds','Bristol','Nottingham','Leicester','Glasgow','Liverpool','Newcastle']
+  // "Popular" = real cities with the most live salons. Falls back to the start
+  // of the canonical list if there's no data yet, so this never renders empty.
+  const popularCities = Object.keys(cityCounts).length
+    ? Object.entries(cityCounts).sort((a, b) => b[1] - a[1]).map(([city]) => city)
+    : UK_CITIES
+  const cities = UK_CITIES // full canonical list — every city an owner can actually pick when listing a salon
   const categories = [
     { slug:'braids',   label:'Braids',     emoji:'✂️',  desc:'Knotless, box braids & more' },
     { slug:'locs',     label:'Locs',       emoji:'🌿',  desc:'Starter locs & maintenance' },
@@ -111,7 +119,7 @@ export default async function HomePage() {
               {/* City pills */}
               <p className="text-2xs font-bold uppercase tracking-widest text-white/40 mb-2.5">Popular Cities</p>
               <div className="flex flex-wrap justify-center lg:justify-start gap-2">
-                {cities.slice(0, 8).map(c => (
+                {popularCities.slice(0, 8).map(c => (
                   <Link key={c} href={`/location/${c.toLowerCase()}`}
                     className="px-3 py-1.5 border border-white/20 text-white/60 rounded-full text-xs font-medium hover:text-white hover:border-white/50 hover:bg-white/10 transition-all">
                     📍 {c}

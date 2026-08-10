@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import BusinessForm from '@/components/business/BusinessForm'
+import { UK_CITIES } from '@/lib/utils'
 
 export default async function BusinessPage({ searchParams }: { searchParams: { new?: string } }) {
   const supabase = await createClient()
@@ -18,7 +19,7 @@ export default async function BusinessPage({ searchParams }: { searchParams: { n
   }
 
   const bTypes = ['Hair Salon','Locs Specialist','Wig Studio','Nail Bar','Makeup Artist','Skincare Studio','Mobile Stylist','Beauty Spa','Barbershop','Afro Barber','Threading & Waxing','Eyebrow Studio','Eyelash Studio','Bridal Studio','Other']
-  const cities  = ['London','Birmingham','Manchester','Leeds','Bristol','Sheffield','Nottingham','Leicester','Liverpool','Newcastle','Glasgow','Edinburgh','Cardiff','Other']
+  const cities  = [...UK_CITIES, 'Other']
 
   return (
     <div className="container py-10 max-w-2xl">

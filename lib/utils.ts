@@ -88,6 +88,15 @@ export function isValidBusinessName(name: string): boolean {
   return /^[A-Za-z][A-Za-z\s'.-]{1,79}$/.test(name.trim())
 }
 
+/**
+ * Single source of truth for every UK city selectable across the app — salon
+ * creation, salon editing, and the /salons filter dropdown all use this list.
+ * Previously each of those had its own separately hardcoded array, and they'd
+ * already drifted out of sync (the homepage's list was missing 3 cities that
+ * every other list had). Centralizing here means that can't happen again.
+ */
+export const UK_CITIES = ['London','Birmingham','Manchester','Leeds','Bristol','Sheffield','Nottingham','Leicester','Liverpool','Newcastle','Glasgow','Edinburgh','Cardiff']
+
 export function isValidName(name: string): boolean {
   return /^[A-Za-z][A-Za-z\s'.-]{1,59}$/.test(name.trim())
 }

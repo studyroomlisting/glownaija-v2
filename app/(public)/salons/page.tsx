@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import Image from 'next/image'
 import SalonCard from '@/components/salon/SalonCard'
-import { fmtPrice } from '@/lib/utils'
+import { fmtPrice, UK_CITIES } from '@/lib/utils'
 
 interface SalonsSearchParams {
   city?: string; service?: string; search?: string
@@ -56,7 +56,7 @@ export default async function SalonsPage({ searchParams }: { searchParams: Salon
   const total = count || 0
   const totalPages = Math.max(1, Math.ceil(total / per))
 
-  const cities = ['London','Birmingham','Manchester','Leeds','Bristol','Sheffield','Nottingham','Leicester','Liverpool','Newcastle','Glasgow','Edinburgh','Cardiff']
+  const cities = UK_CITIES
   const serviceTypes = [
     { slug: 'braids',   label: 'Braids' },
     { slug: 'locs',     label: 'Locs' },
