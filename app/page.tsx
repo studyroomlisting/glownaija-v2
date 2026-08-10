@@ -261,21 +261,19 @@ export default async function HomePage() {
 
         {/* ── FEATURED SALONS ───────────────────────────────────────────── */}
         {(featured?.length || 0) > 0 && (
-          <section className="bg-page-2 py-12">
-            <div className="container">
-              <div className="flex justify-between items-end mb-6">
-                <div>
-                  <p className="text-2xs font-bold uppercase tracking-widest text-gold mb-1">Featured</p>
-                  <h2 className="text-3xl font-black">Featured Salons</h2>
-                </div>
-                <Link href="/salons?featured=1" className="text-rose text-sm font-bold hover:underline hidden sm:block">View all salons →</Link>
+          <section className="container py-16">
+            <div className="flex justify-between items-end mb-6">
+              <div>
+                <p className="text-2xs font-bold uppercase tracking-widest text-gold mb-1">Featured</p>
+                <h2 className="text-3xl font-black">Featured Salons</h2>
               </div>
-              <HomeCarousel
-                items={featured!.map(s => <FeaturedSalonCard key={s.id} salon={s} isSaved={savedIds.has(s.id)} />)}
-                perPage={1}
-                gridClass=""
-              />
+              <Link href="/salons?featured=1" className="text-rose text-sm font-bold hover:underline hidden sm:block">View all salons →</Link>
             </div>
+            <HomeCarousel
+              items={featured!.map(s => <FeaturedSalonCard key={s.id} salon={s} isSaved={savedIds.has(s.id)} />)}
+              perPage={1}
+              gridClass=""
+            />
           </section>
         )}
 
@@ -301,7 +299,7 @@ export default async function HomePage() {
 
         {/* ── EVENTS ────────────────────────────────────────────────────── */}
         {(events?.length || 0) > 0 && (
-          <section className="container section">
+          <section className="container py-16">
             <div className="flex justify-between items-end mb-6">
               <div>
                 <p className="text-2xs font-bold uppercase tracking-widest text-rose mb-1">Upcoming</p>
