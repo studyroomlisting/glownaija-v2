@@ -2,12 +2,11 @@
 import { useState } from 'react'
 
 export default function HomeCarousel({
-  items, perPage, gridClass, renderItem,
+  items, perPage, gridClass,
 }: {
-  items: any[]
+  items: React.ReactNode[]
   perPage: number
   gridClass: string
-  renderItem: (item: any) => React.ReactNode
 }) {
   const [page, setPage] = useState(0)
   const totalPages = Math.ceil(items.length / perPage)
@@ -16,7 +15,7 @@ export default function HomeCarousel({
   return (
     <div>
       <div className={gridClass}>
-        {visible.map(item => renderItem(item))}
+        {visible}
       </div>
       {totalPages > 1 && (
         <div className="flex justify-center gap-1.5 mt-7">

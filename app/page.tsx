@@ -271,10 +271,9 @@ export default async function HomePage() {
                 <Link href="/salons?featured=1" className="text-rose text-sm font-bold hover:underline hidden sm:block">View all salons →</Link>
               </div>
               <HomeCarousel
-                items={featured!}
+                items={featured!.map(s => <FeaturedSalonCard key={s.id} salon={s} isSaved={savedIds.has(s.id)} />)}
                 perPage={1}
                 gridClass=""
-                renderItem={(s) => <FeaturedSalonCard key={s.id} salon={s} isSaved={savedIds.has(s.id)} />}
               />
             </div>
           </section>
@@ -292,10 +291,9 @@ export default async function HomePage() {
                 <Link href="/shop" className="text-rose text-sm font-bold hover:underline hidden sm:block">Shop all products →</Link>
               </div>
               <HomeCarousel
-                items={products!}
+                items={products!.map(p => <HomeProductCard key={p.id} product={p} />)}
                 perPage={3}
                 gridClass="grid grid-cols-1 sm:grid-cols-3 gap-4"
-                renderItem={(p) => <HomeProductCard key={p.id} product={p} />}
               />
             </div>
           </section>
@@ -312,10 +310,9 @@ export default async function HomePage() {
               <Link href="/events" className="text-rose text-sm font-bold hover:underline hidden sm:block">All events →</Link>
             </div>
             <HomeCarousel
-              items={events!}
+              items={events!.map(e => <HomeEventCard key={e.id} event={e} />)}
               perPage={2}
               gridClass="grid grid-cols-1 sm:grid-cols-2 gap-5"
-              renderItem={(e) => <HomeEventCard key={e.id} event={e} />}
             />
           </section>
         )}
