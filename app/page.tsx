@@ -6,8 +6,10 @@ import Image             from 'next/image'
 import { Fragment }      from 'react'
 import Header            from '@/components/layout/Header'
 import Footer            from '@/components/layout/Footer'
-import SalonCard         from '@/components/salon/SalonCard'
-import ProductCard       from '@/components/shop/ProductCard'
+import HomeCarousel      from '@/components/home/HomeCarousel'
+import FeaturedSalonCard from '@/components/home/FeaturedSalonCard'
+import HomeProductCard   from '@/components/home/HomeProductCard'
+import HomeEventCard     from '@/components/home/HomeEventCard'
 import Testimonials      from '@/components/layout/Testimonials'
 import { ukDateString, UK_CITIES }  from '@/lib/utils'
 
@@ -23,14 +25,22 @@ export default async function HomePage() {
     { count: salonCount },
     { count: userCount  },
     { data: allServiceTypes },
+    { data: { user } },
   ] = await Promise.all([
-    supabase.from('salons').select('*').eq('listing_status','approved').eq('is_active',true).eq('is_featured',true).order('rating',{ascending:false}).limit(6),
-    supabase.from('products').select('*').eq('is_active',true).order('rating',{ascending:false}).limit(4),
-    supabase.from('events').select('*').eq('is_active',true).gte('event_date', ukDateString()).order('event_date').limit(3),
+    supabase.from('salons').select('*').eq('listing_status','approved').eq('is_active',true).eq('is_featured',true).order('rating',{ascending:false}).limit(9),
+    supabase.from('products').select('*').eq('is_active',true).order('rating',{ascending:false}).limit(9),
+    supabase.from('events').select('*').eq('is_active',true).gte('event_date', ukDateString()).order('event_date').limit(6),
     supabase.from('salons').select('*',{count:'exact',head:true}).eq('is_active',true).eq('listing_status','approved'),
     supabase.from('profiles').select('*',{count:'exact',head:true}),
     supabase.from('salons').select('city,service_types').eq('listing_status','approved').eq('is_active',true),
+    supabase.auth.getUser(),
   ])
+
+  let savedIds = new Set<string>()
+  if (user && featured?.length) {
+    const { data: saved } = await supabase.from('saved_salons').select('salon_id').eq('user_id', user.id).in('salon_id', featured.map(s => s.id))
+    savedIds = new Set((saved || []).map(s => s.salon_id))
+  }
 
   // Real per-category salon counts — computed from live data, not hardcoded.
   const categoryCounts: Record<string, number> = {}
@@ -255,14 +265,17 @@ export default async function HomePage() {
             <div className="container">
               <div className="flex justify-between items-end mb-6">
                 <div>
-                  <p className="text-2xs font-bold uppercase tracking-widest text-gold mb-1">Handpicked</p>
-                  <h2 className="text-3xl font-black">⭐ Featured Salons</h2>
+                  <p className="text-2xs font-bold uppercase tracking-widest text-gold mb-1">Featured</p>
+                  <h2 className="text-3xl font-black">Featured Salons</h2>
                 </div>
-                <Link href="/salons?featured=1" className="text-rose text-sm font-bold hover:underline hidden sm:block">View all →</Link>
+                <Link href="/salons?featured=1" className="text-rose text-sm font-bold hover:underline hidden sm:block">View all salons →</Link>
               </div>
-              <div className="grid-3">
-                {featured!.map(s => <SalonCard key={s.id} salon={s} />)}
-              </div>
+              <HomeCarousel
+                items={featured!}
+                perPage={1}
+                gridClass=""
+                renderItem={(s) => <FeaturedSalonCard key={s.id} salon={s} isSaved={savedIds.has(s.id)} />}
+              />
             </div>
           </section>
         )}
@@ -274,14 +287,16 @@ export default async function HomePage() {
               <div className="flex justify-between items-end mb-6">
                 <div>
                   <p className="text-2xs font-bold uppercase tracking-widest text-rose mb-1">Beauty Shop</p>
-                  <h2 className="text-3xl font-black">🛍️ Shop Top Products</h2>
-                  <p className="text-ink-3 text-sm mt-1">Afro &amp; Caribbean hair care, skincare and beauty</p>
+                  <h2 className="text-3xl font-black">Shop Top Products</h2>
                 </div>
-                <Link href="/shop" className="text-rose text-sm font-bold hover:underline hidden sm:block">Shop all →</Link>
+                <Link href="/shop" className="text-rose text-sm font-bold hover:underline hidden sm:block">Shop all products →</Link>
               </div>
-              <div className="grid-4">
-                {products!.map(p => <ProductCard key={p.id} product={p} />)}
-              </div>
+              <HomeCarousel
+                items={products!}
+                perPage={3}
+                gridClass="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                renderItem={(p) => <HomeProductCard key={p.id} product={p} />}
+              />
             </div>
           </section>
         )}
@@ -292,33 +307,16 @@ export default async function HomePage() {
             <div className="flex justify-between items-end mb-6">
               <div>
                 <p className="text-2xs font-bold uppercase tracking-widest text-rose mb-1">Upcoming</p>
-                <h2 className="text-3xl font-black">🎉 Beauty Events</h2>
+                <h2 className="text-3xl font-black">Beauty Events</h2>
               </div>
               <Link href="/events" className="text-rose text-sm font-bold hover:underline hidden sm:block">All events →</Link>
             </div>
-            <div className="grid-3">
-              {events!.map(e => (
-                <Link key={e.id} href={`/events/${e.id}`} className="card">
-                  <div className="h-36 bg-gradient-to-br from-ink to-purple-800 relative overflow-hidden">
-                    {e.image_url
-                      ? <img src={e.image_url} alt={e.title} className="w-full h-full object-cover opacity-80"/>
-                      : <div className="absolute inset-0 flex items-center justify-center text-5xl">{e.emoji}</div>
-                    }
-                    <span className="absolute top-3 left-3 badge-pill bg-rose text-white text-2xs">{e.event_type}</span>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-black text-sm mb-1 line-clamp-2">{e.title}</p>
-                    <p className="text-xs text-ink-3 mb-1">
-                      📅 {new Date(e.event_date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})} · {e.time_start?.substring(0,5)}
-                    </p>
-                    <p className="text-xs text-ink-3">📍 {e.venue}, {e.city}</p>
-                    <p className="font-black text-sm mt-2">
-                      {e.is_free ? <span className="text-gn">Free</span> : `£${(e.price/100).toFixed(2)}`}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+            <HomeCarousel
+              items={events!}
+              perPage={2}
+              gridClass="grid grid-cols-1 sm:grid-cols-2 gap-5"
+              renderItem={(e) => <HomeEventCard key={e.id} event={e} />}
+            />
           </section>
         )}
 
