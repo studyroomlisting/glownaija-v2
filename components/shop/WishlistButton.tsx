@@ -12,14 +12,20 @@ export default function WishlistButton({ productId, initialSaved }: Props) {
 
   async function toggle() {
     setLoading(true)
-    const res = await fetch('/api/save-product', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ product_id: productId }),
-    })
-    const data = await res.json()
-    if (!data.error) setSaved(data.saved)
-    setLoading(false)
+    try {
+      const res = await fetch('/api/save-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId }),
+      })
+      const data = await res.json()
+      if (!data.error) setSaved(data.saved)
+    } catch {
+      // Non-fatal — the button just stays in its previous state, silently
+      // retryable on next click.
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

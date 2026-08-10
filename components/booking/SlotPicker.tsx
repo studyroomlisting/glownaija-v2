@@ -14,6 +14,8 @@ export default function SlotPicker({ salonId, date, onSelect, selected }: SlotPi
   const [taken,  setTaken]  = useState<string[]>([])
   const [closed, setClosed] = useState(false)
   const [loading,setLoading]= useState(false)
+  const [loadError, setLoadError] = useState(false)
+  const [retryKey, setRetryKey] = useState(0)
   const [now,    setNow]    = useState(() => new Date())
 
   // Re-check the clock every 30s so a slot that just passed greys out live,
@@ -29,6 +31,7 @@ export default function SlotPicker({ salonId, date, onSelect, selected }: SlotPi
   useEffect(() => {
     if (!salonId || !date) return
     setLoading(true)
+    setLoadError(false)
     fetch(`/api/availability?salon_id=${salonId}&date=${date}`)
       .then(r => r.json())
       .then(d => {
@@ -37,9 +40,20 @@ export default function SlotPicker({ salonId, date, onSelect, selected }: SlotPi
         setTaken(d.taken_slots || [])
         setLoading(false)
       })
-  }, [salonId, date])
+      .catch(() => {
+        setLoadError(true)
+        setLoading(false)
+      })
+  }, [salonId, date, retryKey])
 
   if (loading) return <div className="text-center py-6 text-ink-3 text-sm">Loading availability…</div>
+  if (loadError) return (
+    <div className="text-center py-6 text-ink-3 bg-page-2 rounded-xl">
+      <p className="text-2xl mb-2">⚠️</p>
+      <p className="font-semibold mb-2">Could not load availability</p>
+      <button type="button" onClick={() => setRetryKey(k => k + 1)} className="btn btn-outline btn-sm text-xs">Try again</button>
+    </div>
+  )
   if (closed)  return <div className="text-center py-6 text-ink-3 bg-page-2 rounded-xl"><p className="text-2xl mb-2">🚫</p><p className="font-semibold">Closed on this day</p></div>
   const futureSlots = isToday ? slots.filter(s => s > nowHHMM) : slots
   if (!slots.length || (isToday && !futureSlots.length)) return <div className="text-center py-6 text-ink-3 bg-page-2 rounded-xl"><p>No availability on this date</p></div>

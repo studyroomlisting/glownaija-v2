@@ -53,25 +53,30 @@ export default function CheckoutPage() {
     if (!isValidName(fullName)) { setError('Please enter your full name (letters only).'); setLoading(false); return }
     if (!isValidUKPostcode(postcode)) { setError('Please enter a valid UK postcode (e.g. SE15 5DT).'); setLoading(false); return }
 
-    const res  = await fetch('/api/checkout', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        items,
-        full_name:     fullName,
-        address:       fd.get('address'),
-        city:          fd.get('city'),
-        postcode,
-        delivery_cost: deliveryCost,
-        coupon_id:     coupon?.coupon_id || null,
-      }),
-    })
-    const data = await res.json()
-    if (data.url) {
-      clearCart()
-      window.location.href = data.url
-    } else {
-      setError(data.error || 'Checkout failed. Please try again.')
+    try {
+      const res  = await fetch('/api/checkout', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items,
+          full_name:     fullName,
+          address:       fd.get('address'),
+          city:          fd.get('city'),
+          postcode,
+          delivery_cost: deliveryCost,
+          coupon_id:     coupon?.coupon_id || null,
+        }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        clearCart()
+        window.location.href = data.url
+      } else {
+        setError(data.error || 'Checkout failed. Please try again.')
+        setLoading(false)
+      }
+    } catch {
+      setError('Could not reach the server. Please check your connection and try again.')
       setLoading(false)
     }
   }

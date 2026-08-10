@@ -20,17 +20,22 @@ export default function ContactPage() {
     e.preventDefault()
     setError(''); setLoading(true)
     const fd = new FormData(e.currentTarget)
-    const res = await fetch('/api/contact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: fd.get('name'), email: fd.get('email'),
-        subject: fd.get('subject'), message: fd.get('message'),
-      }),
-    })
-    const data = await res.json()
-    if (data.error) { setError(data.error); setLoading(false) }
-    else { setSent(true); setLoading(false) }
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: fd.get('name'), email: fd.get('email'),
+          subject: fd.get('subject'), message: fd.get('message'),
+        }),
+      })
+      const data = await res.json()
+      if (data.error) { setError(data.error); setLoading(false) }
+      else { setSent(true); setLoading(false) }
+    } catch {
+      setError('Could not reach the server. Please check your connection and try again.')
+      setLoading(false)
+    }
   }
 
   return (
