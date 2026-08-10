@@ -4,38 +4,36 @@ import SaveButton from '@/components/salon/SaveButton'
 
 export default function FeaturedSalonCard({ salon, isSaved }: { salon: any; isSaved: boolean }) {
   const img = salon.images?.[0]
+
   return (
-    <div className="card grid sm:grid-cols-[1.1fr_1fr] overflow-hidden">
-      <div className="relative h-56 sm:h-auto">
+    <div className="card overflow-hidden">
+      <Link href={`/salon/${salon.slug}`} className="block relative h-48 bg-gradient-to-br from-ink to-purple-800 overflow-hidden">
         {img
-          ? <img src={img} alt={salon.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full bg-gradient-to-br from-ink to-purple-900 flex items-center justify-center text-6xl">{salon.emoji}</div>
+          ? <img src={img} alt={salon.name} className="w-full h-full object-cover opacity-90"/>
+          : <div className="absolute inset-0 flex items-center justify-center text-6xl">{salon.emoji}</div>
         }
-        <span className="absolute top-3 left-3 badge-pill bg-white/95 text-ink text-xs font-bold">★ {salon.rating || '—'}</span>
-        <SaveButton salonId={salon.id} initialSaved={isSaved} iconOnly
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 flex items-center justify-center text-sm shadow-sm"/>
-        <div className="absolute bottom-3 left-3 right-3 flex gap-1.5 flex-wrap">
-          <span className={`badge-pill text-2xs ${salon.is_open ? 'bg-gn text-white' : 'bg-ink/70 text-white'}`}>● {salon.is_open ? 'Open Now' : 'Closed'}</span>
-          {salon.service_types?.[0] && <span className="badge-pill bg-white/90 text-ink text-2xs capitalize">👥 {salon.service_types[0]}</span>}
+        <span className="absolute top-3 left-3 badge-pill bg-gold text-white text-2xs font-bold uppercase tracking-wide">Featured</span>
+        <div className="absolute top-3 right-3 bg-white rounded-xl px-2.5 py-1.5 text-center leading-none shadow-sm">
+          <p className="font-black text-base text-ink">★ {salon.rating || '—'}</p>
+          <p className="text-3xs font-bold text-ink-3">{salon.review_count} revs</p>
         </div>
-      </div>
-      <div className="p-6 flex flex-col justify-center">
-        <div className="flex justify-between items-start gap-3 mb-2">
-          <div>
-            <h3 className="font-black text-xl mb-1">{salon.name}</h3>
-            <p className="text-xs text-ink-3 flex items-center gap-1">👥 Ladies, Unisex</p>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <p className="text-2xs text-ink-3">From</p>
-            <p className="font-black text-lg">{fmtPrice((salon.price_from || 0) * 100)}</p>
-          </div>
+      </Link>
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <Link href={`/salon/${salon.slug}`}>
+            <p className="font-black text-lg hover:text-rose transition-colors">{salon.name}</p>
+          </Link>
+          <SaveButton salonId={salon.id} initialSaved={isSaved} iconOnly
+            className="w-8 h-8 rounded-full bg-page-2 flex items-center justify-center text-sm flex-shrink-0"/>
         </div>
-        <p className="text-xs text-ink-3 flex items-center gap-1 mb-2">📍 {salon.area}, {salon.city}</p>
-        <p className="text-sm mb-5">
-          <span className="text-gold">{'★'.repeat(Math.round(salon.rating || 0))}{'☆'.repeat(5 - Math.round(salon.rating || 0))}</span>
-          <span className="text-ink-3 text-xs ml-1">({salon.review_count} reviews)</span>
+        <p className="text-xs text-ink-3 flex items-center gap-1.5 mb-1">
+          {salon.is_open ? '● Open Now' : '● Closed'} · 👥 Ladies, Unisex
         </p>
-        <Link href={`/salon/${salon.slug}`} className="btn btn-primary w-fit">View Details →</Link>
+        <p className="text-xs text-ink-3 flex items-center gap-1.5 mb-4">📍 {salon.area}, {salon.city}</p>
+        <div className="flex items-center justify-between">
+          <span className="font-black text-lg">From {fmtPrice((salon.price_from || 0) * 100)}</span>
+          <Link href={`/salon/${salon.slug}`} className="btn btn-primary btn-sm">View Details</Link>
+        </div>
       </div>
     </div>
   )

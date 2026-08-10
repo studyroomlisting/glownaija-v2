@@ -271,8 +271,8 @@ export default async function HomePage() {
             </div>
             <HomeCarousel
               items={featured!.map(s => <FeaturedSalonCard key={s.id} salon={s} isSaved={savedIds.has(s.id)} />)}
-              perPage={1}
-              gridClass=""
+              perPage={2}
+              gridClass="grid grid-cols-1 sm:grid-cols-2 gap-5"
             />
           </section>
         )}
