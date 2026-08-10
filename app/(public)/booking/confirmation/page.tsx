@@ -88,7 +88,7 @@ export default async function BookingConfirmationPage({ searchParams }: { search
         <div className="space-y-5">
           <div className="card card-body">
             <h2 className="font-bold mb-4">Your Booking Details</h2>
-            <div className="grid grid-cols-2 gap-y-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-3 text-sm">
               <div><p className="text-2xs text-ink-3 uppercase tracking-wide">Salon</p><p className="font-semibold">{salon?.name}</p></div>
               <div><p className="text-2xs text-ink-3 uppercase tracking-wide">Service</p><p className="font-semibold">{service?.name || 'General appointment'}</p></div>
               <div><p className="text-2xs text-ink-3 uppercase tracking-wide">Date</p><p className="font-semibold">{bookingDate}</p></div>

@@ -76,7 +76,7 @@ export default function ContactPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && <div className="alert-error">{error}</div>}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div><label className="label">Full Name *</label><input name="name" className="input" placeholder="Your name" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required/></div>
                   <div><label className="label">Email Address *</label><input name="email" type="email" className="input" placeholder="you@example.com" required/></div>
                 </div>

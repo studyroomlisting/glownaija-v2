@@ -123,7 +123,7 @@ export default function CheckoutPage() {
                     <label className="label">Street Address *</label>
                     <input name="address" className="input" placeholder="12 Peckham High Street" required/>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="label">City *</label>
                       <input name="city" className="input" placeholder="London" required/>

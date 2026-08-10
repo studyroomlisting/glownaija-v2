@@ -232,7 +232,7 @@ export default async function SalonPage({ params }: { params: { slug: string } }
               <form action={submitEnquiry} className="space-y-4">
                 <input type="hidden" name="salon_id" value={salon.id}/>
                 <input type="hidden" name="enq_slug" value={salon.slug}/>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="label">Your Name *</label>
                     <input name="enq_name" className="input" pattern="[A-Za-z][A-Za-z\s'.-]{1,59}" title="Letters only" required/>

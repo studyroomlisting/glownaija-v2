@@ -66,7 +66,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
             submitClassName="btn btn-primary w-full justify-center text-base py-3.5">
             <input type="hidden" name="event_id" value={e.id}/>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="label">Name *</label>
                 <div className="relative">
@@ -83,7 +83,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="label">Phone</label>
                 <div className="relative">
@@ -103,12 +103,12 @@ export default async function EventPage({ params }: { params: { id: string } }) 
           </ActionForm>
 
           {/* Trust badges */}
-          <div className="grid grid-cols-3 gap-3 mt-6 pt-5 border-t border-bdr text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6 pt-5 border-t border-bdr text-center">
             {[['🔒','Secure Checkout','Your payment is encrypted'],['⚡','Instant Confirmation','Get your ticket instantly'],['🔔','Limited Seats',`Only ${e.capacity} seats available`]].map(([icon,title,desc]) => (
               <div key={title}>
                 <span className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-sm mx-auto mb-1.5">{icon}</span>
                 <p className="text-2xs font-bold text-ink-2">{title}</p>
-                <p className="text-3xs text-ink-3 mt-0.5 hidden sm:block">{desc}</p>
+                <p className="text-3xs text-ink-3 mt-0.5">{desc}</p>
               </div>
             ))}
           </div>

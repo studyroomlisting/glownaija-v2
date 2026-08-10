@@ -199,7 +199,7 @@ export default async function SalonsPage({ searchParams }: { searchParams: Salon
               <Link href="/salons" className="btn btn-outline btn-sm mt-4">Clear all filters</Link>
             </div>
           ) : view === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {salons.map(s => <SalonCard key={s.id} salon={s}/>)}
             </div>
           ) : (

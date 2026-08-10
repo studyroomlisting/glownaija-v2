@@ -41,7 +41,7 @@ export default async function AboutPage() {
               <p className="text-ink-3 text-base mb-8 max-w-md">
                 GlowNaija is the UK's trusted platform to discover top salons, book appointments, explore beauty services, and shop your favourites — all in one place.
               </p>
-              <div className="flex gap-8">
+              <div className="flex flex-wrap gap-4 sm:gap-8">
                 {[
                   ['🏅', `${salonCount ? `${salonCount}+` : '1,000+'}`, 'Top Salons'],
                   ['👥', `${userCount ? `${Math.floor(userCount/1000)}K+` : '50K+'}`, 'Happy Customers'],
