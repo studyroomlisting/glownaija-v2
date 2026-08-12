@@ -10,6 +10,7 @@ import HomeCarousel      from '@/components/home/HomeCarousel'
 import FeaturedSalonCard from '@/components/home/FeaturedSalonCard'
 import HomeProductCard   from '@/components/home/HomeProductCard'
 import HomeEventCard     from '@/components/home/HomeEventCard'
+import HomeSearchForm    from '@/components/home/HomeSearchForm'
 import Testimonials      from '@/components/layout/Testimonials'
 import { ukDateString, UK_CITIES }  from '@/lib/utils'
 
@@ -117,14 +118,7 @@ export default async function HomePage() {
               </p>
 
               {/* Search bar */}
-              <form action="/search" className="flex max-w-xl mx-auto lg:mx-0 bg-white rounded-2xl overflow-hidden shadow-2xl mb-7">
-                <span className="pl-5 flex items-center text-ink-3">🔍</span>
-                <input name="q" className="flex-1 min-w-0 px-4 py-4 text-sm outline-none text-ink placeholder:text-ink-3 bg-transparent"
-                  placeholder="Search salons, services, cities…"/>
-                <button type="submit" className="px-7 bg-rose text-white font-bold text-sm hover:bg-rose-dark transition-colors flex-shrink-0">
-                  Search
-                </button>
-              </form>
+              <HomeSearchForm/>
 
               {/* City pills */}
               <p className="text-2xs font-bold uppercase tracking-widest text-white/40 mb-2.5">Popular Cities</p>
