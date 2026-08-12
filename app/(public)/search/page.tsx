@@ -11,7 +11,19 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
   let salons: any[] = [], products: any[] = [], events: any[] = []
   if (q.length >= 2) {
     const s = supabase; const t = searchParams.type || 'all'
-    if (t==='all'||t==='salons')   { const {data} = await s.from('salons').select('*').eq('listing_status','approved').eq('is_active',true).or(`name.ilike.%${q}%,area.ilike.%${q}%,city.ilike.%${q}%`).order('rating',{ascending:false}).limit(9); salons=data||[] }
+    if (t==='all'||t==='salons') {
+      // Also match salons that offer a service whose name contains the search
+      // term — e.g. "knotless braids" should find the salon even if neither its
+      // name nor location literally contains those words.
+      const { data: matchingServices } = await s.from('services').select('salon_id').ilike('name', `%${q}%`)
+      const serviceSalonIds = [...new Set((matchingServices || []).map(r => r.salon_id))]
+      let salonQuery = s.from('salons').select('*').eq('listing_status','approved').eq('is_active',true)
+      salonQuery = serviceSalonIds.length
+        ? salonQuery.or(`name.ilike.%${q}%,area.ilike.%${q}%,city.ilike.%${q}%,id.in.(${serviceSalonIds.join(',')})`)
+        : salonQuery.or(`name.ilike.%${q}%,area.ilike.%${q}%,city.ilike.%${q}%`)
+      const { data } = await salonQuery.order('rating',{ascending:false}).limit(9)
+      salons = data || []
+    }
     if (t==='all'||t==='products') { const {data} = await s.from('products').select('*').eq('is_active',true).or(`name.ilike.%${q}%,brand.ilike.%${q}%`).order('rating',{ascending:false}).limit(8); products=data||[] }
     if (t==='all'||t==='events')   { const {data} = await s.from('events').select('*').eq('is_active',true).gte('event_date',ukDateString()).or(`title.ilike.%${q}%,city.ilike.%${q}%`).order('event_date').limit(6); events=data||[] }
   }
