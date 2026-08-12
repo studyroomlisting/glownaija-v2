@@ -9,8 +9,19 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
   const q = searchParams.q?.trim() || ''
   const supabase = await createClient()
   let salons: any[] = [], products: any[] = [], events: any[] = []
-  if (q.length >= 2) {
-    const s = supabase; const t = searchParams.type || 'all'
+  const s = supabase; const t = searchParams.type || 'all'
+
+  if (!q) {
+    // Empty search + clicking the button directly: show all salons rather than
+    // nothing. Products/events stay empty here since this is specifically about
+    // browsing salons — searching a term still shows all three as before.
+    if (t==='all'||t==='salons') {
+      const { data } = await s.from('salons').select('*')
+        .eq('listing_status','approved').eq('is_active',true)
+        .order('rating',{ascending:false}).limit(24)
+      salons = data || []
+    }
+  } else if (q.length >= 2) {
     if (t==='all'||t==='salons') {
       // Also match salons that offer a service whose name contains the search
       // term — e.g. "knotless braids" should find the salon even if neither its
@@ -52,9 +63,14 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
   return (
     <div className="container py-8">
       <form action="/search" className="flex gap-3 mb-6"><input name="q" defaultValue={q} className="input flex-1" placeholder="Search salons, products, events…" autoFocus/><button className="btn btn-primary">Search</button></form>
-      {q && <p className="text-ink-3 text-sm mb-6">{total} results for "<strong className="text-ink">{q}</strong>"</p>}
-      {!q && <div className="text-center py-16 text-ink-3"><div className="text-6xl mb-4">🔍</div><p className="font-bold text-lg">Search anything</p><p>Salons, products, events, styles…</p></div>}
+      {q
+        ? <p className="text-ink-3 text-sm mb-6">{total} results for "<strong className="text-ink">{q}</strong>"</p>
+        : <p className="text-ink-3 text-sm mb-6">{salons.length} salon{salons.length !== 1 ? 's' : ''} — showing all</p>
+      }
       {salons.length>0 && <div className="mb-8"><h2 className="font-bold text-xl mb-4">✂️ Salons</h2><div className="grid-3">{salons.map(s=><SalonCard key={s.id} salon={s}/>)}</div></div>}
+      {q && !salons.length && !products.length && !events.length && (
+        <div className="text-center py-16 text-ink-3"><div className="text-6xl mb-4">🔍</div><p className="font-bold text-lg">No results found</p><p>Try a different search term</p></div>
+      )}
       {products.length>0 && <div className="mb-8"><h2 className="font-bold text-xl mb-4">🛍️ Products</h2><div className="grid-4">{products.map(p=><ProductCard key={p.id} product={p}/>)}</div></div>}
     </div>
   )
