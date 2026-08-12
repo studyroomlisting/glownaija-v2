@@ -95,6 +95,39 @@ export function isValidBusinessName(name: string): boolean {
  * already drifted out of sync (the homepage's list was missing 3 cities that
  * every other list had). Centralizing here means that can't happen again.
  */
+/**
+ * The exact same service categories shown in the homepage's "Browse by
+ * Category" section and used as salons.service_types values. Centralized here
+ * so search can recognize a category name (e.g. "braids", "barber") and find
+ * salons that offer it — even when no individual service's literal name field
+ * happens to contain that word (e.g. a service named "Skin Fade" with
+ * category='barber' has nothing called "barber" in its name).
+ */
+export const SERVICE_CATEGORIES = [
+  { slug: 'braids',   label: 'Braids' },
+  { slug: 'locs',     label: 'Locs' },
+  { slug: 'wigs',     label: 'Wigs' },
+  { slug: 'nails',    label: 'Nails' },
+  { slug: 'makeup',   label: 'Makeup' },
+  { slug: 'skincare', label: 'Skincare' },
+  { slug: 'barber',   label: 'Barber' },
+  { slug: 'bridal',   label: 'Bridal' },
+  { slug: 'natural',  label: 'Natural Hair' },
+  { slug: 'colour',   label: 'Colour' },
+  { slug: 'wax',      label: 'Waxing' },
+]
+
+/** Returns the matching category slug if the search text names a known category (by slug or label, either direction), otherwise null. */
+export function matchServiceCategory(query: string): string | null {
+  const q = query.trim().toLowerCase()
+  if (!q) return null
+  for (const c of SERVICE_CATEGORIES) {
+    const label = c.label.toLowerCase()
+    if (q === c.slug || q === label || label.includes(q) || q.includes(c.slug)) return c.slug
+  }
+  return null
+}
+
 export const UK_CITIES = ['London','Birmingham','Manchester','Leeds','Bristol','Sheffield','Nottingham','Leicester','Liverpool','Newcastle','Glasgow','Edinburgh','Cardiff']
 
 export function isValidName(name: string): boolean {

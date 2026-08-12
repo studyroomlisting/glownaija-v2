@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import SalonCard from '@/components/salon/SalonCard'
 import ProductCard from '@/components/shop/ProductCard'
-import { ukDateString } from '@/lib/utils'
+import { ukDateString, matchServiceCategory } from '@/lib/utils'
 
 export default async function SearchPage({ searchParams }: { searchParams: { q?: string; type?: string } }) {
   const q = searchParams.q?.trim() || ''
@@ -17,12 +17,33 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
       // name nor location literally contains those words.
       const { data: matchingServices } = await s.from('services').select('salon_id').ilike('name', `%${q}%`)
       const serviceSalonIds = [...new Set((matchingServices || []).map(r => r.salon_id))]
-      let salonQuery = s.from('salons').select('*').eq('listing_status','approved').eq('is_active',true)
-      salonQuery = serviceSalonIds.length
-        ? salonQuery.or(`name.ilike.%${q}%,area.ilike.%${q}%,city.ilike.%${q}%,id.in.(${serviceSalonIds.join(',')})`)
-        : salonQuery.or(`name.ilike.%${q}%,area.ilike.%${q}%,city.ilike.%${q}%`)
-      const { data } = await salonQuery.order('rating',{ascending:false}).limit(9)
-      salons = data || []
+
+      const orClauses = [`name.ilike.%${q}%`, `area.ilike.%${q}%`, `city.ilike.%${q}%`]
+      if (serviceSalonIds.length) orClauses.push(`id.in.(${serviceSalonIds.join(',')})`)
+      const { data: textMatches } = await s.from('salons').select('*')
+        .eq('listing_status','approved').eq('is_active',true)
+        .or(orClauses.join(','))
+        .order('rating',{ascending:false}).limit(9)
+
+      // Also match when the search text itself names a known service category
+      // (matching Browse by Category exactly) — e.g. "braids" or "barber" should
+      // find salons offering that category, even when no individual service's
+      // literal name field contains that word. Run as a separate query (using
+      // the proven .contains() method) and merge, rather than mixing an
+      // array-type condition into the raw .or() string above.
+      const categorySlug = matchServiceCategory(q)
+      let categoryMatches: any[] = []
+      if (categorySlug) {
+        const { data } = await s.from('salons').select('*')
+          .eq('listing_status','approved').eq('is_active',true)
+          .contains('service_types', [categorySlug])
+          .order('rating',{ascending:false}).limit(9)
+        categoryMatches = data || []
+      }
+
+      const merged = new Map<string, any>()
+      for (const row of [...(textMatches || []), ...categoryMatches]) merged.set(row.id, row)
+      salons = Array.from(merged.values()).sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 9)
     }
     if (t==='all'||t==='products') { const {data} = await s.from('products').select('*').eq('is_active',true).or(`name.ilike.%${q}%,brand.ilike.%${q}%`).order('rating',{ascending:false}).limit(8); products=data||[] }
     if (t==='all'||t==='events')   { const {data} = await s.from('events').select('*').eq('is_active',true).gte('event_date',ukDateString()).or(`title.ilike.%${q}%,city.ilike.%${q}%`).order('event_date').limit(6); events=data||[] }
